@@ -2,39 +2,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>com.idear.devices.card.cardkit</groupId>
         <artifactId>cardkit</artifactId>
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>cardkit-card-calypso</artifactId>
-    <packaging>jar</packaging>
-
-    <developers>
-        <developer>
-            <name>Victor Hugo Gaspar Quinn</name>
-            <email>hugoquinn.profesional@gmail.com</email>
-        </developer>
-    </developers>
+    <artifactId>cardkit-test</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <dependencies>
-
-        <!-- Core -->
-        <dependency>
-            <groupId>com.idear.devices.card.cardkit</groupId>
-            <artifactId>cardkit-core</artifactId>
-        </dependency>
-
-    </dependencies>
 
 </project>
