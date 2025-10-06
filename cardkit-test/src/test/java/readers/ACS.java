@@ -33,7 +33,10 @@ public class ACS {
 
                 if (simpleRead.isOk()) {
                     TransactionResult<CalypsoCardCDMX> fullRead = reader.executeTransaction(new ReadAllCardData(WriteAccessLevel.DEBIT));
-                    System.out.println(fullRead.getData().getContracts().findFirst(Contract::isValid).get().toJson());
+                    if (fullRead.isOk())
+                        System.out.println(fullRead.getData().toJson());
+                    else
+                        System.out.println(fullRead.toJson());
                 }
             }
         });

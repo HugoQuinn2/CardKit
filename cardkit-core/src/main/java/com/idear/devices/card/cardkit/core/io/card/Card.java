@@ -7,4 +7,15 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public abstract class Card extends Item {
+    private String serial;
+    private int balance;
+
+    public Card(String serial) {
+        this.serial = serial;
+    }
+
+    public Card() {
+        this("");
+    }
+
 }

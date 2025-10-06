@@ -1,8 +1,9 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
+import com.idear.devices.card.cardkit.core.datamodel.date.RealTimeDate;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
-import com.idear.devices.card.cardkit.core.io.datamodel.calypso.CDMX;
-import com.idear.devices.card.cardkit.core.io.datamodel.calypso.TransactionType;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.utils.Assert;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
@@ -21,11 +22,11 @@ public class Event extends File {
     private int networkId;
     private int serviceProvider;
     private int locationId;
-    private int dateTimeStamp;
+    private RealTimeDate dateTimeStamp;
     private int amount;
     private int firstServiceProvider;
     private int firstLocationId;
-    private int firstDateTimeStamp;
+    private RealTimeDate firstDateTimeStamp;
     private int firstPassenger;
     private int firstContractsUsed;
     private int data;
@@ -44,11 +45,11 @@ public class Event extends File {
         this.networkId            = data[5] & 0xff;
         this.serviceProvider      = data[6] & 0xff;
         this.locationId           = ByteUtils.extractInt(data, 7, 3, false);
-        this.dateTimeStamp        = ByteUtils.extractInt(data, 10, 4, false);
+        this.dateTimeStamp        = new RealTimeDate(ByteUtils.extractInt(data, 10, 4, false));
         this.amount               = ByteUtils.extractInt(data, 14, 3, false);
         this.firstServiceProvider = data[17] & 0xff;
         this.firstLocationId      = ByteUtils.extractInt(data, 18, 3, false);
-        this.firstDateTimeStamp   = ByteUtils.extractInt(data, 21, 4, false);
+        this.firstDateTimeStamp   = new RealTimeDate(ByteUtils.extractInt(data, 21, 4, false));
         this.firstPassenger       = data[25] & 0xff;
         this.firstContractsUsed   = data[26] & 0xff;
         this.data                 = ByteUtils.extractInt(data, 27, 2, false);

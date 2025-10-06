@@ -29,11 +29,11 @@ public abstract class DateUtils {
         return toCompactLocalDate(normalDateCompact);
     }
 
-    public static byte[] toBytes(int dateCompact) {
-        byte msb = (byte) ((dateCompact & 0xff00) >> 8);
-        byte lsb = (byte) (dateCompact & 0x00ff);
-        return new byte[]{msb, lsb};
+    public static LocalDateTime toRealTime(int date) {
+        return LocalDateTime.ofEpochSecond(
+                Integer.valueOf(date).longValue() + SECONDS_UNTIL_1997_01_01,
+                0,
+                ZONE_OFFSET);
     }
-
 
 }

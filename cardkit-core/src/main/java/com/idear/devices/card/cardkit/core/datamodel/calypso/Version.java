@@ -1,6 +1,6 @@
-package com.idear.devices.card.cardkit.core.io.datamodel.calypso;
+package com.idear.devices.card.cardkit.core.datamodel.calypso;
 
-import com.idear.devices.card.cardkit.core.io.datamodel.IDataModel;
+import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import lombok.Getter;
 
 @Getter

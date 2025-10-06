@@ -1,5 +1,6 @@
-package com.idear.devices.card.cardkit.core.io.datamodel;
+package com.idear.devices.card.cardkit.core.datamodel;
 
+import com.idear.devices.card.cardkit.core.datamodel.date.ByteDate;
 import com.idear.devices.card.cardkit.core.utils.DateUtils;
 
 public class ReverseDate extends ByteDate {

@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.core.io.datamodel;
+package com.idear.devices.card.cardkit.core.datamodel;
 
 public interface IDataModel {
 

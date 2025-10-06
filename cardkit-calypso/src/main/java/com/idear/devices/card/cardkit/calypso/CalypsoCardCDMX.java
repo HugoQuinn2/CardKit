@@ -10,10 +10,6 @@ import java.util.*;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CalypsoCardCDMX extends Card {
-
-    private String serial = "";
-    private int balance = 0;
-
     private Environment environment;
     private List<Event> events = new ArrayList<>();
     private Contracts contracts = new Contracts();

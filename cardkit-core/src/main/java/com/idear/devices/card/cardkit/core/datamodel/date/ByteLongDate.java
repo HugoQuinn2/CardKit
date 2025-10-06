@@ -1,6 +1,7 @@
-package com.idear.devices.card.cardkit.core.io.datamodel;
+package com.idear.devices.card.cardkit.core.datamodel.date;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.DateUtils;
 import lombok.Data;

@@ -1,28 +1,31 @@
-package com.idear.devices.card.cardkit.core.io.datamodel;
+package com.idear.devices.card.cardkit.core.datamodel.date;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import com.idear.devices.card.cardkit.core.io.Item;
+import com.idear.devices.card.cardkit.core.utils.DateUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public abstract class ByteDate extends Item implements IDataModel {
-
-    private LocalDate date;
+public class RealTimeDate extends Item implements IDataModel {
     private final int code;
+    private LocalDateTime date;
 
-    public ByteDate(int code) {
+    public RealTimeDate(int code) {
         this.code = code;
+        setDate(DateUtils.toRealTime(code));
     }
 
     public boolean isValid() {
         if (date == null)
             return false;
 
-        return !date.isBefore(LocalDate.now());
+        return !date.isBefore(LocalDateTime.now());
     }
 
     /**
@@ -37,5 +40,4 @@ public abstract class ByteDate extends Item implements IDataModel {
     public int getValue() {
         return this.code;
     }
-
 }

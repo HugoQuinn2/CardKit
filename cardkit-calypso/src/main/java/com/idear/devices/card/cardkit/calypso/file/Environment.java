@@ -1,8 +1,9 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
+import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
+import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
-import com.idear.devices.card.cardkit.core.io.datamodel.CompactDate;
-import com.idear.devices.card.cardkit.core.io.datamodel.calypso.*;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,7 +20,7 @@ public class Environment extends File {
     private int application;
     private CompactDate issuingDate;
     private CompactDate endDate;
-    private CompactDate holderBirthDate;
+    private LongDate holderBirthDate;
     private int holderCompany;
     private int holderId;
 
@@ -54,7 +55,7 @@ public class Environment extends File {
 
         this.issuingDate = new CompactDate(ByteUtils.extractInt(env, 8, 2, false));
         this.endDate = new CompactDate(ByteUtils.extractInt(env, 10, 2, false));
-        this.holderBirthDate = new CompactDate(ByteUtils.extractInt(env, 12, 4, false));
+        this.holderBirthDate = new LongDate(ByteUtils.extractInt(env, 12, 4, false));
 
         this.holderCompany = env[16] & 0xFF;
         this.holderId = ByteUtils.extractInt(env, 17, 4, false);

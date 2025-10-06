@@ -1,10 +1,10 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
-import com.idear.devices.card.cardkit.core.io.datamodel.CompactDate;
-import com.idear.devices.card.cardkit.core.io.datamodel.ReverseDate;
-import com.idear.devices.card.cardkit.core.io.datamodel.calypso.*;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
+import com.idear.devices.card.cardkit.core.datamodel.ReverseDate;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

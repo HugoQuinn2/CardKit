@@ -1,7 +1,7 @@
 package com.idear.devices.card.cardkit.calypso.transaction;
 
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
-import com.idear.devices.card.cardkit.core.io.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;

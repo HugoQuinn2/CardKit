@@ -1,6 +1,6 @@
 package com.idear.devices.card.cardkit.calypso.transaction;
 
-import com.idear.devices.card.cardkit.core.io.datamodel.calypso.AppSubType;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.AppSubType;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
