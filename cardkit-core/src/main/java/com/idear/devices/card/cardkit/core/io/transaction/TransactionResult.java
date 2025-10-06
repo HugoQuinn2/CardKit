@@ -13,4 +13,9 @@ public class TransactionResult<T> extends Item {
     private T data;
     private String message;
     private long time;
+
+    public boolean is(TransactionStatus transactionStatus) {
+        return this.transactionStatus.equals(transactionStatus);
+    }
+
 }
