@@ -1,9 +1,10 @@
-package com.idear.devices.card.cardkit.reader.file;
+package com.idear.devices.card.cardkit.calypso.file;
 
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.card.SvLoadLogRecord;
 
 @EqualsAndHashCode(callSuper = true)
@@ -16,7 +17,7 @@ public class LoadLog extends File {
     private int balance;
     private int amount;
     private int time;
-    private int samId;
+    private String samId;
     private int samTNum;
     private int svNum;
 
@@ -33,7 +34,7 @@ public class LoadLog extends File {
         this.balance = data.getBalance();
         this.amount = data.getAmount();
         this.time = ByteUtils.extractInt(data.getLoadTime(), 0, 2, false);
-        this.samId = ByteUtils.extractInt(data.getSamId(), 0, 4, false);
+        this.samId = HexUtil.toHex(ByteUtils.extractInt(data.getSamId(), 0, 4, false));
         this.samTNum = data.getSamTNum();
         this.svNum = data.getSvTNum();
     }

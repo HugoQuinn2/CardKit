@@ -1,13 +1,13 @@
-package com.idear.devices.card.cardkit.reader.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction;
 
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
-import com.idear.devices.card.cardkit.reader.CalypsoCDMXCard;
-import com.idear.devices.card.cardkit.reader.ReaderPCSC;
-import com.idear.devices.card.cardkit.reader.file.*;
+import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.calypso.file.*;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
@@ -21,17 +21,17 @@ import java.util.SortedMap;
 
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
+public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private final WriteAccessLevel writeAccessLevel;
 
-    private CalypsoCDMXCard  cdmxCard;
-    private TransactionResult<CalypsoCDMXCard> simpleRead;
+    private CalypsoCardCDMX cdmxCard;
+    private TransactionResult<CalypsoCardCDMX> simpleRead;
     private TransactionResult<CalypsoCard> readFile;
 
     /**
      * Create an {@link ReadAllCardData} transaction, this transaction read all {@link CalypsoCard} data and parse
-     * to {@link CalypsoCDMXCard}
+     * to {@link CalypsoCardCDMX}
      *
      * @param writeAccessLevel the level to read
      */
@@ -41,13 +41,13 @@ public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
     }
 
     /**
-     * Read all files card and parse to {@link CalypsoCDMXCard}, no verification of the data is performed
+     * Read all files card and parse to {@link CalypsoCardCDMX}, no verification of the data is performed
      *
      * @param reader the reader to use
      * @return the data parsed
      */
     @Override
-    public TransactionResult<CalypsoCDMXCard> execute(ReaderPCSC reader) {
+    public TransactionResult<CalypsoCardCDMX> execute(ReaderPCSC reader) {
 
         simpleRead = reader.executeTransaction(new SimpleReadCard());
 
@@ -138,7 +138,7 @@ public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
         }
 
         return TransactionResult
-                .<CalypsoCDMXCard>builder()
+                .<CalypsoCardCDMX>builder()
                 .transactionStatus(TransactionStatus.OK)
                 .data(cdmxCard)
                 .build();

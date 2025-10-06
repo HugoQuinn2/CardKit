@@ -1,12 +1,15 @@
-package com.idear.devices.card.cardkit.reader;
+package com.idear.devices.card.cardkit.calypso;
 
-import com.idear.devices.card.cardkit.reader.file.*;
+import com.idear.devices.card.cardkit.core.io.card.Card;
+import com.idear.devices.card.cardkit.calypso.file.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.*;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class CalypsoCDMXCard {
+public class CalypsoCardCDMX extends Card {
 
     private String serial = "";
     private int balance = 0;

@@ -1,6 +1,7 @@
-package com.idear.devices.card.cardkit.reader.file;
+package com.idear.devices.card.cardkit.calypso.file;
 
 import com.idear.devices.card.cardkit.core.io.card.file.File;
+import com.idear.devices.card.cardkit.core.io.datamodel.CompactDate;
 import com.idear.devices.card.cardkit.core.io.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
@@ -16,17 +17,17 @@ public class Environment extends File {
     private NetworkCode network;
     private int issuer;
     private int application;
-    private int issuingDate;
-    private int endDate;
-    private int holderBirthDate;
+    private CompactDate issuingDate;
+    private CompactDate endDate;
+    private CompactDate holderBirthDate;
     private int holderCompany;
     private int holderId;
 
     private Profile profile;
 
-    private int prof1Date;
-    private int prof2Date;
-    private int prof3Date;
+    private CompactDate prof1Date;
+    private CompactDate prof2Date;
+    private CompactDate prof3Date;
 
     private int holderPadding;
 
@@ -50,9 +51,11 @@ public class Environment extends File {
         this.network = NetworkCode.decode(env[2] & 0xFF);
         this.issuer = env[3] & 0xFF;
         this.application = ByteUtils.extractInt(env, 4, 4, false);
-        this.issuingDate = ByteUtils.extractInt(env, 8, 2, false);
-        this.endDate = ByteUtils.extractInt(env, 10, 2, false);
-        this.holderBirthDate = ByteUtils.extractInt(env, 12, 4, false);
+
+        this.issuingDate = new CompactDate(ByteUtils.extractInt(env, 8, 2, false));
+        this.endDate = new CompactDate(ByteUtils.extractInt(env, 10, 2, false));
+        this.holderBirthDate = new CompactDate(ByteUtils.extractInt(env, 12, 4, false));
+
         this.holderCompany = env[16] & 0xFF;
         this.holderId = ByteUtils.extractInt(env, 17, 4, false);
 
@@ -62,13 +65,13 @@ public class Environment extends File {
                 ByteUtils.mostSignificantNibble(env[26])
         );
 
-        this.prof1Date = ByteUtils.extractInt(
-                ByteUtils.extractBytes(env, 21 * 8 + 4, 2), 0, 2, false);
+        this.prof1Date = new CompactDate(ByteUtils.extractInt(
+                ByteUtils.extractBytes(env, 21 * 8 + 4, 2), 0, 2, false)) ;
 
-        this.prof2Date = ByteUtils.extractInt(env, 24, 2, false);
+        this.prof2Date = new CompactDate(ByteUtils.extractInt(env, 24, 2, false)) ;
 
-        this.prof3Date = ByteUtils.extractInt(
-                ByteUtils.extractBytes(env, 26 * 8 + 4, 2), 0, 2, false);
+        this.prof3Date = new CompactDate(ByteUtils.extractInt(
+                ByteUtils.extractBytes(env, 26 * 8 + 4, 2), 0, 2, false));
 
         this.holderPadding = ByteUtils.leastSignificantNibble(env[28]);
     }

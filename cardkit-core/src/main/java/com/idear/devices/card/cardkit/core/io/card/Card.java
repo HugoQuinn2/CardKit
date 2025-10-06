@@ -6,6 +6,5 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public abstract class Card<T> extends Item {
-    public abstract void parse(T data);
+public abstract class Card extends Item {
 }

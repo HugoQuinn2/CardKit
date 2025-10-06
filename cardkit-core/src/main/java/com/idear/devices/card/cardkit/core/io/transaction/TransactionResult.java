@@ -18,4 +18,8 @@ public class TransactionResult<T> extends Item {
         return this.transactionStatus.equals(transactionStatus);
     }
 
+    public boolean isOk() {
+        return is(TransactionStatus.OK);
+    }
+
 }

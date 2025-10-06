@@ -10,7 +10,7 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>cardkit-reader-acs</artifactId>
+    <artifactId>cardkit-calypso</artifactId>
     <packaging>jar</packaging>
 
     <properties>

@@ -1,7 +1,8 @@
-package com.idear.devices.card.cardkit.reader.file;
+package com.idear.devices.card.cardkit.calypso.file;
 
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.io.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.io.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.utils.Assert;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
@@ -16,7 +17,7 @@ public class Event extends File {
 
     private int version;
     private int transactionNumber;
-    private int transactionType;
+    private TransactionType transactionType;
     private int networkId;
     private int serviceProvider;
     private int locationId;
@@ -39,7 +40,7 @@ public class Event extends File {
 
         this.version              = data[0] & 0xff;
         this.transactionNumber    = ByteUtils.extractInt(data, 1, 3, false);
-        this.transactionType      = data[4] & 0xff;
+        this.transactionType      = TransactionType.decode(data[4] & 0xff);
         this.networkId            = data[5] & 0xff;
         this.serviceProvider      = data[6] & 0xff;
         this.locationId           = ByteUtils.extractInt(data, 7, 3, false);

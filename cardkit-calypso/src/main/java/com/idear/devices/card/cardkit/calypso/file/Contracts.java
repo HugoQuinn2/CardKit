@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.reader.file;
+package com.idear.devices.card.cardkit.calypso.file;
 
 import java.util.*;
 import java.util.function.Predicate;

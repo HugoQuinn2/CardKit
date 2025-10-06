@@ -1,7 +1,8 @@
 package com.idear.devices.card.cardkit.core.io.datamodel;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.idear.devices.card.cardkit.core.io.Item;
+import com.idear.devices.card.cardkit.core.io.card.file.File;
+import com.idear.devices.card.cardkit.core.utils.DateUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -9,20 +10,14 @@ import java.time.LocalDate;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public abstract class ByteDate extends Item implements IDataModel {
+public class ByteLongDate extends File implements IDataModel {
 
     private LocalDate date;
     private final int code;
 
-    public ByteDate(int code) {
+    public ByteLongDate(int code) {
         this.code = code;
-    }
-
-    public boolean isValid() {
-        if (date == null)
-            return false;
-
-        return !date.isBefore(LocalDate.now());
+        this.date = DateUtils.toLongLocalDate(code);
     }
 
     /**
@@ -37,5 +32,4 @@ public abstract class ByteDate extends Item implements IDataModel {
     public int getValue() {
         return this.code;
     }
-
 }

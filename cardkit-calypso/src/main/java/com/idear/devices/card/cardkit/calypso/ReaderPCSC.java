@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.reader;
+package com.idear.devices.card.cardkit.calypso;
 
 import com.idear.devices.card.cardkit.core.io.reader.Reader;
 import com.idear.devices.card.cardkit.core.utils.Assert;

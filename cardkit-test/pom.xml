@@ -19,12 +19,12 @@
     <dependencies>
         <dependency>
             <groupId>com.idear.devices.card.cardkit</groupId>
-            <artifactId>cardkit-reader-acs</artifactId>
+            <artifactId>cardkit-calypso</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.idear.devices.card.cardkit</groupId>
-            <artifactId>cardkit-card-calypso-cdmx</artifactId>
+            <artifactId>cardkit-calypso</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

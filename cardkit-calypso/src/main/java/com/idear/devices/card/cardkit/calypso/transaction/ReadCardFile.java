@@ -1,11 +1,10 @@
-package com.idear.devices.card.cardkit.reader.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction;
 
-import com.idear.devices.card.cardkit.core.io.reader.Reader;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
-import com.idear.devices.card.cardkit.reader.CalypsoCDMXCard;
-import com.idear.devices.card.cardkit.reader.ReaderPCSC;
+import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import lombok.Getter;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
@@ -30,7 +29,7 @@ public class ReadCardFile extends Transaction<CalypsoCard, ReaderPCSC> {
 
     @Override
     public TransactionResult<CalypsoCard> execute(ReaderPCSC reader) {
-        TransactionResult<CalypsoCDMXCard> simpleRead = reader.executeTransaction(new SimpleReadCard());
+        TransactionResult<CalypsoCardCDMX> simpleRead = reader.executeTransaction(new SimpleReadCard());
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
         SecureRegularModeTransactionManager cardTransactionManager =

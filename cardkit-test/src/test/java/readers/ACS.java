@@ -1,12 +1,12 @@
 package readers;
 
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
-import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
-import com.idear.devices.card.cardkit.reader.CalypsoCDMXCard;
-import com.idear.devices.card.cardkit.reader.CalypsoSam;
-import com.idear.devices.card.cardkit.reader.ReaderPCSC;
-import com.idear.devices.card.cardkit.reader.transaction.ReadAllCardData;
-import com.idear.devices.card.cardkit.reader.transaction.SimpleReadCard;
+import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.calypso.CalypsoSam;
+import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.calypso.file.Contract;
+import com.idear.devices.card.cardkit.calypso.transaction.ReadAllCardData;
+import com.idear.devices.card.cardkit.calypso.transaction.SimpleReadCard;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.reader.CardReaderEvent;
 import org.junit.jupiter.api.Test;
@@ -29,12 +29,12 @@ public class ACS {
 
             if (((CardReaderEvent) event).getType() == CardReaderEvent.Type.CARD_MATCHED) {
 
-                TransactionResult<CalypsoCDMXCard> simpleRead = reader.executeTransaction(new SimpleReadCard());
+                TransactionResult<CalypsoCardCDMX> simpleRead = reader.executeTransaction(new SimpleReadCard());
 
-                if (simpleRead.getTransactionStatus().equals(TransactionStatus.OK))
-                    System.out.println(reader.executeTransaction(new ReadAllCardData(WriteAccessLevel.DEBIT)).toJson());
-
-
+                if (simpleRead.isOk()) {
+                    TransactionResult<CalypsoCardCDMX> fullRead = reader.executeTransaction(new ReadAllCardData(WriteAccessLevel.DEBIT));
+                    System.out.println(fullRead.getData().getContracts().findFirst(Contract::isValid).get().toJson());
+                }
             }
         });
 

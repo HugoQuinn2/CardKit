@@ -23,8 +23,7 @@
 
     <modules>
         <module>cardkit-core</module>
-        <module>cardkit-card-calypso-cdmx</module>
-        <module>cardkit-reader-acs</module>
+        <module>cardkit-calypso</module>
         <module>cardkit-test</module>
     </modules>
 
@@ -165,7 +164,7 @@
 
             <dependency>
                 <groupId>com.idear.devices.card.cardkit</groupId>
-                <artifactId>cardkit-reader-acs</artifactId>
+                <artifactId>cardkit-calypso</artifactId>
                 <version>1.0.0</version>
             </dependency>
 

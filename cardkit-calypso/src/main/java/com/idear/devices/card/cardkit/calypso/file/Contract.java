@@ -1,11 +1,16 @@
-package com.idear.devices.card.cardkit.reader.file;
+package com.idear.devices.card.cardkit.calypso.file;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
+import com.idear.devices.card.cardkit.core.io.datamodel.CompactDate;
+import com.idear.devices.card.cardkit.core.io.datamodel.ReverseDate;
 import com.idear.devices.card.cardkit.core.io.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.eclipse.keyple.core.util.HexUtil;
+
+import java.time.LocalDate;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -16,7 +21,7 @@ public class Contract extends File {
     private int version;
     private ContractStatus status;
     private int rfu;
-    private int startDate;
+    private ReverseDate startDate;
     private int duration;
     private int network;
     private Provider provider;
@@ -29,7 +34,7 @@ public class Contract extends File {
     private int restrictCode;
     private int periodJourney;
     private long location;
-    private int saleDate;
+    private CompactDate saleDate;
     private int saleSam;
     private int authKvc;
     private int authenticator;
@@ -53,7 +58,7 @@ public class Contract extends File {
         this.version              = data[0] & 0xff;
         this.status               = ContractStatus.decode(data[1] & 0xff);
         this.rfu                  = (data[2] & 0b11000000) >> 6;
-        this.startDate            = ByteUtils.extractInt(data, 2, 2, false) & 0x3fff;
+        this.startDate            = new ReverseDate(ByteUtils.extractInt(data, 2, 2, false) & 0x3fff);
         this.duration             = data[4] & 0xff;
         this.network              = data[5] & 0xff;
         this.provider             = Provider.decode(data[6] & 0xff);
@@ -69,9 +74,21 @@ public class Contract extends File {
         this.restrictCode         = data[9] & 0xff;
         this.periodJourney        = data[10] & 0xff;
         this.location             = ByteUtils.extractLong(data, 11, 5, false);
-        this.saleDate             = ByteUtils.extractInt(data, 16, 2, false);
+        this.saleDate             = new CompactDate(ByteUtils.extractInt(data, 16, 2, false));
         this.saleSam              = ByteUtils.extractInt(data, 18, 4, false);
         this.authKvc              = data[25] & 0xff;
         this.authenticator        = ByteUtils.extractInt(data, 26, 3, false);
+    }
+
+    /**
+     * Verify if the contract is {@link ContractStatus#CONTRACT_PARTLY_USED} and verify if end date
+     * {@code startDate months + duration} is valid.
+     */
+    @JsonIgnore
+    public boolean isValid() {
+        LocalDate endDate = startDate.getDate().plusMonths(duration);
+
+        return status.equals(ContractStatus.CONTRACT_PARTLY_USED) &&
+                !endDate.isBefore(LocalDate.now());
     }
 }

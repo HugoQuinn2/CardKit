@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.reader;
+package com.idear.devices.card.cardkit.calypso;
 
 import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.sam.Sam;
