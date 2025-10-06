@@ -4,6 +4,7 @@ import com.idear.devices.card.cardkit.core.io.reader.Reader;
 import com.idear.devices.card.cardkit.core.utils.Assert;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.core.service.Plugin;
@@ -14,7 +15,6 @@ import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
 import org.eclipse.keypop.calypso.card.transaction.*;
-import org.eclipse.keypop.calypso.crypto.legacysam.sam.LegacySam;
 import org.eclipse.keypop.reader.*;
 import org.eclipse.keypop.reader.selection.CardSelectionManager;
 import org.eclipse.keypop.reader.selection.InvalidCardResponseException;
@@ -61,8 +61,10 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     /** The associated Calypso SAM instance used for secure transactions. */
     private final CalypsoSam calypsoSam;
     /** Manager responsible for Calypso secure regular transactions. */
+    @ToString.Exclude
     private SecureRegularModeTransactionManager cardTransactionManager;
     /** Manages card selection and filtering based on AIDs. */
+    @ToString.Exclude
     private CardSelectionManager cardSelectionManager;
     /** The underlying physical card reader instance. */
     private CardReader cardReader;
@@ -70,15 +72,18 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     private CalypsoCard calypsoCard;
 
     // Start Pcsc plugin
+    @ToString.Exclude
     public static final SmartCardService smartCardService = SmartCardServiceProvider.getService();
+    @ToString.Exclude
     public static final Plugin plugin = smartCardService.registerPlugin(PcscPluginFactoryBuilder.builder().build());
 
     // Calypso card services required
+    @ToString.Exclude
     public static final ReaderApiFactory readerApiFactory = smartCardService.getReaderApiFactory();
+    @ToString.Exclude
     public static final CalypsoExtensionService calypsoExtensionService = CalypsoExtensionService.getInstance();
+    @ToString.Exclude
     public static final CalypsoCardApiFactory calypsoCardApiFactory = calypsoExtensionService.getCalypsoCardApiFactory();
-
-
 
     /**
      * Retrieves the set of available reader names registered in the PCSC plugin.
