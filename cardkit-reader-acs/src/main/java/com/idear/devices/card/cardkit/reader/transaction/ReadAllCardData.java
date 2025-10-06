@@ -7,8 +7,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.reader.CalypsoCDMXCard;
 import com.idear.devices.card.cardkit.reader.ReaderPCSC;
-import com.idear.devices.card.cardkit.reader.file.DebitLog;
-import com.idear.devices.card.cardkit.reader.file.LoadLog;
+import com.idear.devices.card.cardkit.reader.file.*;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
@@ -67,7 +66,7 @@ public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
 
         if (readFile.is(TransactionStatus.OK)) {
             cdmxCard.setEnvironment(
-                    new CalypsoCDMXCard.Environment(
+                    new Environment(
                             readFile.getData()
                                     .getFileBySfi(CDMX.ENVIRONMENT_FILE)
                                     .getData()
@@ -101,14 +100,14 @@ public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
         );
 
         if (readFile.is(TransactionStatus.OK)) {
-            List<CalypsoCDMXCard.Event> events = new ArrayList<>();
+            List<Event> events = new ArrayList<>();
             SortedMap<Integer, byte[]> partialEvents = readFile.getData()
                     .getFileBySfi(CDMX.EVENT_FILE)
                     .getData()
                     .getAllRecordsContent();
 
             for (int id : partialEvents.keySet()) {
-                events.add(new CalypsoCDMXCard.Event(id, partialEvents.get(id)));
+                events.add(new Event(id, partialEvents.get(id)));
             }
 
             cdmxCard.setEvents(events);
@@ -122,7 +121,7 @@ public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
         );
 
         if (readFile.is(TransactionStatus.OK)) {
-            CalypsoCDMXCard.Contracts contracts = new CalypsoCDMXCard.Contracts();
+            Contracts contracts = new Contracts();
 
             SortedMap<Integer, byte[]> partialContracts = readFile.getData()
                     .getFileBySfi((byte) 0x09)
@@ -130,7 +129,7 @@ public class ReadAllCardData extends Transaction<CalypsoCDMXCard, ReaderPCSC> {
                     .getAllRecordsContent();
 
             for (int id : partialContracts.keySet()) {
-                contracts.add(new CalypsoCDMXCard.Contract(id, partialContracts.get(id)));
+                contracts.add(new Contract(id, partialContracts.get(id)));
             }
 
             cdmxCard.setContracts(contracts);
