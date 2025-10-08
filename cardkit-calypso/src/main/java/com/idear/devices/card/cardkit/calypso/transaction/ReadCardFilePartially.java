@@ -80,7 +80,7 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
     @Override
     public TransactionResult<SortedMap<Integer, byte[]>> execute(ReaderPCSC reader) {
 
-        simpleRead = reader.executeTransaction(new SimpleReadCard());
+        simpleRead = reader.execute(new SimpleReadCard());
         if (!simpleRead.isOk())
             throw new ReaderException("no card was found in the reader");
 

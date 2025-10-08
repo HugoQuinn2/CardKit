@@ -7,6 +7,7 @@ import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamExtensionService;
 import org.eclipse.keyple.card.generic.CardTransactionManager;
@@ -35,10 +36,14 @@ public class CalypsoSam extends Sam {
     private final String samName;
     private final String lockSecret;
 
+    @ToString.Exclude
     private LegacySam legacySam;
+    @ToString.Exclude
     private CardReader samReader;
 
+    @ToString.Exclude
     private CardTransactionManager genericSamTransactionManager;
+    @ToString.Exclude
     private SymmetricCryptoSecuritySetting symmetricCryptoSettingsRT;
 
     // Sam data params

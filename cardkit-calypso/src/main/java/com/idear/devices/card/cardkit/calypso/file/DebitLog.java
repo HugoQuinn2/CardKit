@@ -1,18 +1,17 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
-import com.idear.devices.card.cardkit.core.datamodel.ReverseDate;
-import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
-import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
+import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.eclipse.keyple.core.util.HexUtil;
-import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DebitLog extends File {
+public class DebitLog extends File<DebitLog> {
+
     private int amount;
     private int date;
     private int time;
@@ -22,23 +21,29 @@ public class DebitLog extends File {
     private int balance;
     private int svtNum;
 
-    public DebitLog(SvDebitLogRecord svDebitLogRecord) {
-
-        if (svDebitLogRecord == null)
-            throw new NullPointerException("debit record can not be null");
-
-        this.amount = svDebitLogRecord.getAmount();
-        this.date = ByteUtils.extractInt(svDebitLogRecord.getDebitTime(), 0, 2, false);
-        this.time = ByteUtils.extractInt(svDebitLogRecord.getDebitTime(), 0, 2, false);
-        this.samId = HexUtil.toHex(ByteUtils.extractInt(svDebitLogRecord.getSamId(), 0, 4, false));
-        this.kvc = svDebitLogRecord.getKvc();
-        this.samNum = svDebitLogRecord.getSamTNum();
-        this.balance = svDebitLogRecord.getBalance();
-        this.svtNum = svDebitLogRecord.getSvTNum();
+    public DebitLog() {
+        super(null, (byte) 0x00);
     }
 
-    public DebitLog(byte[] data) {
-        super(HexUtil.toHex(data));
+    @Override
+    public byte[] unparse() {
+
+        BitUtil bit = new BitUtil(CDMX.RECORD_SIZE * 8);
+
+        bit.setNextInteger(amount, 16);
+        bit.setNextInteger(date, 16);
+        bit.setNextInteger(time, 16);
+        bit.setNextInteger(kvc, 8);
+        bit.setNextInteger(HexUtil.toInt(samId), 32);
+        bit.setNextInteger(samNum, 24);
+        bit.setNextInteger(balance, 24);
+        bit.setNextInteger(svtNum, 16);
+
+        return bit.getData();
+    }
+
+    @Override
+    public DebitLog parse(byte[] data) {
 
         this.amount = ByteUtils.extractInt(data, 0, 4, false);
         this.date = ByteUtils.extractInt(data, 4, 2, false);
@@ -47,6 +52,8 @@ public class DebitLog extends File {
         this.samId = HexUtil.toHex(ByteUtils.extractInt(data, 9, 4, false));
         this.balance = ByteUtils.extractInt(data, 13, 4, false);
         this.samNum = data[17] & 0xff;
-    }
 
+        setContent(HexUtil.toHex(data));
+        return this;
+    }
 }

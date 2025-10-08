@@ -11,7 +11,7 @@ import org.eclipse.keyple.core.util.HexUtil;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class Environment extends File {
+public class Environment extends File<Environment> {
 
     private Version version;
     private Country country;
@@ -32,49 +32,60 @@ public class Environment extends File {
 
     private int holderPadding;
 
-    public Environment(byte[] env) {
-        super(HexUtil.toHex(env));
+    public Environment() {
+        super(null, CDMX.ENVIRONMENT_FILE);
+    }
 
-        if (env == null)
+    @Override
+    public byte[] unparse() {
+        return new byte[0];
+    }
+
+    @Override
+    public Environment parse(byte[] data) {
+
+        if (data == null)
             throw new IllegalArgumentException("Null data.");
 
-        if (env.length > CDMX.RECORD_SIZE)
+        if (data.length > CDMX.RECORD_SIZE)
             throw new IllegalArgumentException("Data overflow.");
 
-        if (env.length < CDMX.RECORD_SIZE) {
+        if (data.length < CDMX.RECORD_SIZE) {
             byte[] tmp = new byte[CDMX.RECORD_SIZE];
-            System.arraycopy(env, 0, tmp, 0, env.length);
-            env = tmp;
+            System.arraycopy(data, 0, tmp, 0, data.length);
+            data = tmp;
         }
 
-        this.version = Version.decode(ByteUtils.mostSignificantNibble(env[0]));
-        this.country = Country.decode(ByteUtils.extractInt(env, 0, 2, false) & 0x0FFF);
-        this.network = NetworkCode.decode(env[2] & 0xFF);
-        this.issuer = env[3] & 0xFF;
-        this.application = ByteUtils.extractInt(env, 4, 4, false);
+        this.version = Version.decode(ByteUtils.mostSignificantNibble(data[0]));
+        this.country = Country.decode(ByteUtils.extractInt(data, 0, 2, false) & 0x0FFF);
+        this.network = NetworkCode.decode(data[2] & 0xFF);
+        this.issuer = data[3] & 0xFF;
+        this.application = ByteUtils.extractInt(data, 4, 4, false);
 
-        this.issuingDate = new CompactDate(ByteUtils.extractInt(env, 8, 2, false));
-        this.endDate = new CompactDate(ByteUtils.extractInt(env, 10, 2, false));
-        this.holderBirthDate = new LongDate(ByteUtils.extractInt(env, 12, 4, false));
+        this.issuingDate = new CompactDate(ByteUtils.extractInt(data, 8, 2, false));
+        this.endDate = new CompactDate(ByteUtils.extractInt(data, 10, 2, false));
+        this.holderBirthDate = new LongDate(ByteUtils.extractInt(data, 12, 4, false));
 
-        this.holderCompany = env[16] & 0xFF;
-        this.holderId = ByteUtils.extractInt(env, 17, 4, false);
+        this.holderCompany = data[16] & 0xFF;
+        this.holderId = ByteUtils.extractInt(data, 17, 4, false);
 
         this.profile = Profile.decode(
-                ByteUtils.mostSignificantNibble(env[21]),
-                ByteUtils.mostSignificantNibble(env[23]),
-                ByteUtils.mostSignificantNibble(env[26])
+                ByteUtils.mostSignificantNibble(data[21]),
+                ByteUtils.mostSignificantNibble(data[23]),
+                ByteUtils.mostSignificantNibble(data[26])
         );
 
         this.prof1Date = new CompactDate(ByteUtils.extractInt(
-                ByteUtils.extractBytes(env, 21 * 8 + 4, 2), 0, 2, false)) ;
+                ByteUtils.extractBytes(data, 21 * 8 + 4, 2), 0, 2, false)) ;
 
-        this.prof2Date = new CompactDate(ByteUtils.extractInt(env, 24, 2, false)) ;
+        this.prof2Date = new CompactDate(ByteUtils.extractInt(data, 24, 2, false)) ;
 
         this.prof3Date = new CompactDate(ByteUtils.extractInt(
-                ByteUtils.extractBytes(env, 26 * 8 + 4, 2), 0, 2, false));
+                ByteUtils.extractBytes(data, 26 * 8 + 4, 2), 0, 2, false));
 
-        this.holderPadding = ByteUtils.leastSignificantNibble(env[28]);
+        this.holderPadding = ByteUtils.leastSignificantNibble(data[28]);
+
+        setContent(HexUtil.toHex(data));
+        return this;
     }
-
 }

@@ -20,7 +20,7 @@ public abstract class Reader<E> {
      * @param transaction the transaction to execute
      * @return the result transaction
      */
-    public <T, R extends Reader<E>> TransactionResult<T> executeTransaction(Transaction<T, R> transaction) {
+    public <T, R extends Reader<E>> TransactionResult<T> execute(Transaction<T, R> transaction) {
         try {
             long time = System.currentTimeMillis();
             TransactionResult<T> transactionResult = transaction.execute((R) this);
@@ -34,7 +34,7 @@ public abstract class Reader<E> {
         }
     }
 
-    public void addListeners(ReaderEvent e) {
+    public void addListeners(ReaderEvent<E> e) {
         readerEvents.add(e);
     }
 

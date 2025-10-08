@@ -31,11 +31,6 @@ public class SimpleReadCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
                 HexUtil.toHex(calypsoCard.getApplicationSerialNumber())
         );
 
-        // File structure
-        int appSubType = calypsoCard.getApplicationSubtype() & 0xff;
-        if (appSubType != AppSubType.CDMX_RT.getValue())
-            throw new CardException("Unexpected file structure");
-
         // Invalid DF
         if (calypsoCard.isDfInvalidated())
             throw new CardException("invalid df status");

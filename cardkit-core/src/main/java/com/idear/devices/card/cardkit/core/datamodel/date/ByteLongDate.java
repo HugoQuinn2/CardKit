@@ -11,7 +11,7 @@ import java.time.LocalDate;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ByteLongDate extends File implements IDataModel {
+public class ByteLongDate extends File<ByteLongDate> implements IDataModel {
 
     private LocalDate date;
     private final int code;
@@ -32,5 +32,15 @@ public class ByteLongDate extends File implements IDataModel {
     @Override
     public int getValue() {
         return this.code;
+    }
+
+    @Override
+    public byte[] unparse() {
+        return new byte[0];
+    }
+
+    @Override
+    public ByteLongDate parse(byte[] data) {
+        return null;
     }
 }

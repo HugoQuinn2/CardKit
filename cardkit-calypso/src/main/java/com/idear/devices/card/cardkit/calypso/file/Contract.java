@@ -5,6 +5,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.ReverseDate;
+import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class Contract extends File {
+public class Contract extends File<Contract> {
 
     private int id;
 
@@ -36,13 +37,53 @@ public class Contract extends File {
     private long location;
     private CompactDate saleDate;
     private int saleSam;
+    private int saleCounter;
     private int authKvc;
     private int authenticator;
 
-    public Contract(int id, byte[] data) {
-        super(HexUtil.toHex(data));
+    public Contract(int id) {
+        super(null, CDMX.CONTRACT_FILE);
         this.id = id;
+    }
 
+    public boolean isExpired(int daysOffset) {
+        LocalDate expirationDate = startDate.getDate().plusMonths(duration).minusDays(daysOffset);
+        return LocalDate.now().isAfter(expirationDate);
+    }
+
+    @JsonIgnore
+    @Override
+    public byte[] unparse() {
+        BitUtil bit = new BitUtil(CDMX.RECORD_SIZE * 8);
+
+        bit.setNextInteger(version, 8);
+        bit.setNextInteger(status.getValue(), 8);
+        bit.setNextInteger(rfu, 2);
+        bit.setNextInteger(startDate.getValue(), 14);
+        bit.setNextInteger(duration, 8);
+        bit.setNextInteger(network, 8);
+        bit.setNextInteger(provider.getValue(), 8);
+        bit.setNextInteger(modality.getValue(), 1);
+        bit.setNextInteger(counterCode, 2);
+        bit.setNextInteger(tariff.getValue(), 5);
+        bit.setNextInteger(journeyInterChanges, 1);
+        bit.setNextInteger(vehicleClassAllowed, 2);
+        bit.setNextInteger(restrictTime, 5);
+        bit.setNextInteger(restrictCode, 8);
+        bit.setNextInteger(periodJourney, 8);
+        bit.setNextLong(location, 40);
+        bit.setNextInteger(saleDate.getValue(), 16);
+        bit.setNextInteger(saleSam, 32);
+        bit.setNextInteger(saleCounter, 24);
+        bit.setNextInteger(authKvc, 8);
+        bit.setNextInteger(authenticator, 24);
+
+        setContent(HexUtil.toHex(bit.getData()));
+        return bit.getData();
+    }
+
+    @Override
+    public Contract parse(byte[] data) {
         if (data == null)
             throw new IllegalArgumentException("Null data.");
 
@@ -54,6 +95,8 @@ public class Contract extends File {
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }
+
+        setContent(HexUtil.toHex(data));
 
         this.version              = data[0] & 0xff;
         this.status               = ContractStatus.decode(data[1] & 0xff);
@@ -76,19 +119,11 @@ public class Contract extends File {
         this.location             = ByteUtils.extractLong(data, 11, 5, false);
         this.saleDate             = new CompactDate(ByteUtils.extractInt(data, 16, 2, false));
         this.saleSam              = ByteUtils.extractInt(data, 18, 4, false);
+        this.saleCounter          = ByteUtils.extractInt(data, 22, 3, false);
         this.authKvc              = data[25] & 0xff;
         this.authenticator        = ByteUtils.extractInt(data, 26, 3, false);
+
+        return this;
     }
 
-    /**
-     * Verify if the contract is {@link ContractStatus#CONTRACT_PARTLY_USED} and verify if end date
-     * {@code startDate months + duration} is valid.
-     */
-    @JsonIgnore
-    public boolean isValid() {
-        LocalDate endDate = startDate.getDate().plusMonths(duration);
-
-        return status.equals(ContractStatus.CONTRACT_PARTLY_USED) &&
-                !endDate.isBefore(LocalDate.now());
-    }
 }

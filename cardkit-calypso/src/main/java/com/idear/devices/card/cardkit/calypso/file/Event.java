@@ -4,7 +4,6 @@ import com.idear.devices.card.cardkit.core.datamodel.date.RealTimeDate;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
-import com.idear.devices.card.cardkit.core.utils.Assert;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,7 +11,7 @@ import org.eclipse.keyple.core.util.HexUtil;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class Event extends File {
+public class Event extends File<Event> {
 
     private int id;
 
@@ -31,14 +30,18 @@ public class Event extends File {
     private int firstContractsUsed;
     private int data;
 
-    public Event(int id, byte[] data) {
-        super(HexUtil.toHex(data));
+    public Event(int id) {
+        super(null, CDMX.EVENT_FILE);
         this.id = id;
-        Assert.isNull(data, "event frame can not be null");
+    }
 
-        if (data.length < CDMX.RECORD_SIZE)
-            throw new IllegalStateException("event frame can not be less than " + CDMX.RECORD_SIZE);
+    @Override
+    public byte[] unparse() {
+        return new byte[0];
+    }
 
+    @Override
+    public Event parse(byte[] data) {
         this.version              = data[0] & 0xff;
         this.transactionNumber    = ByteUtils.extractInt(data, 1, 3, false);
         this.transactionType      = TransactionType.decode(data[4] & 0xff);
@@ -53,5 +56,8 @@ public class Event extends File {
         this.firstPassenger       = data[25] & 0xff;
         this.firstContractsUsed   = data[26] & 0xff;
         this.data                 = ByteUtils.extractInt(data, 27, 2, false);
+
+        setContent(HexUtil.toHex(data));
+        return this;
     }
 }

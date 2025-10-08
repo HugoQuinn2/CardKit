@@ -76,7 +76,7 @@ public class ReadCardFile extends Transaction<byte[], ReaderPCSC> {
      */
     @Override
     public TransactionResult<byte[]> execute(ReaderPCSC reader) {
-        TransactionResult<CalypsoCardCDMX> simpleRead = reader.executeTransaction(new SimpleReadCard());
+        TransactionResult<CalypsoCardCDMX> simpleRead = reader.execute(new SimpleReadCard());
 
         if (!simpleRead.isOk())
             throw new ReaderException("no card was found in the reader");
