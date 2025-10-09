@@ -115,7 +115,10 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
                     return TransactionResult
                         .<Boolean>builder()
                         .transactionStatus(TransactionStatus.OK)
-                        .message("card contract renewed expiration date: " )
+                        .message("card contract renewed expiration date: " +
+                                contract.getSaleDate().getDate().plusMonths(
+                                        contract.getDuration())
+                                        .minusDays(daysOffset))
                         .data(true)
                         .build();
         }
