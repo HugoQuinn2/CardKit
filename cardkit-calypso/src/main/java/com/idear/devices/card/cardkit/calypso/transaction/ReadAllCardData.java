@@ -100,12 +100,7 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
     private void readLogFiles(ReaderPCSC reader) {
         SvDebitLogRecord debitLogRecord = reader.getCalypsoCard().getSvDebitLogLastRecord();
         if (debitLogRecord != null) {
-            cdmxCard.setDebitLog(
-                    new DebitLog()
-                            .parse(
-                                    debitLogRecord.getRawData()
-                            )
-            );
+            cdmxCard.setDebitLog(new DebitLog().parse(debitLogRecord));
         } else {
             log.warn("failed to read debit log record");
         }
@@ -128,7 +123,7 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
             return;
         }
 
-        List<Event> events = new ArrayList<>();
+        Events events = new Events();
         SortedMap<Integer, byte[]> partialEvents = readFiles.getData();
         for (var entry : partialEvents.entrySet()) {
             events.add(new Event(entry.getKey()).parse(entry.getValue()));
