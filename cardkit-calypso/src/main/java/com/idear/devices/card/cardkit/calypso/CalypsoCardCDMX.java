@@ -11,7 +11,7 @@ import java.util.*;
 @Data
 public class CalypsoCardCDMX extends Card {
     private Environment environment;
-    private List<Event> events = new ArrayList<>();
+    private Events events = new Events();
     private Contracts contracts = new Contracts();
     private DebitLog debitLog;
     private LoadLog loadLog;

@@ -398,6 +398,18 @@ public abstract class ByteUtils {
         return dest;
     }
 
+    public static byte[] extractBytes(long src, int nbBytes) {
+        byte[] data = new byte[nbBytes];
+        int shift = 0;
+
+        for(int i = nbBytes - 1; i >= 0; --i) {
+            data[i] = (byte)((int)(src >> shift & 255L));
+            shift += 8;
+        }
+
+        return data;
+    }
+
     public static int mostSignificantNibble(byte val) {
         return (val & 0xff) >> 4;
     }

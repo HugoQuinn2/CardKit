@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
@@ -76,25 +76,16 @@ public class ReadCardFile extends Transaction<byte[], ReaderPCSC> {
      */
     @Override
     public TransactionResult<byte[]> execute(ReaderPCSC reader) {
-        TransactionResult<CalypsoCardCDMX> simpleRead = reader.execute(new SimpleReadCard());
-
-        if (!simpleRead.isOk())
-            throw new ReaderException("no card was found in the reader");
+        if (!reader.execute(new SimpleReadCard()).isOk())
+            throw new CardException("no card on reader");
 
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
-        SecureRegularModeTransactionManager cardTransactionManager =
-                ReaderPCSC.calypsoCardApiFactory
-                        .createSecureRegularModeTransactionManager(
-                                reader.getCardReader(),
-                                calypsoCard,
-                                reader.getCalypsoSam().getSymmetricCryptoSettingsRT()
-                        );
-
-        cardTransactionManager
+        reader.getCardTransactionManager()
                 .prepareOpenSecureSession(writeAccessLevel)
                 .prepareReadRecord(fileId, record)
                 .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);
 
         ElementaryFile elementaryFile = calypsoCard.getFileBySfi(fileId);

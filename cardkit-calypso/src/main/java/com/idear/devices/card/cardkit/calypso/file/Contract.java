@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
-import com.idear.devices.card.cardkit.core.datamodel.ReverseDate;
+import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
@@ -47,8 +47,7 @@ public class Contract extends File<Contract> {
     }
 
     public boolean isExpired(int daysOffset) {
-        LocalDate expirationDate = startDate.getDate().plusMonths(duration).minusDays(daysOffset);
-        return LocalDate.now().isAfter(expirationDate);
+        return LocalDate.now().isAfter(getExpirationDate(daysOffset));
     }
 
     @JsonIgnore
@@ -124,6 +123,10 @@ public class Contract extends File<Contract> {
         this.authenticator        = ByteUtils.extractInt(data, 26, 3, false);
 
         return this;
+    }
+
+    public LocalDate getExpirationDate(int daysOffset) {
+        return startDate.getDate().plusMonths(duration).minusDays(daysOffset);
     }
 
 }

@@ -1,9 +1,12 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
+import com.idear.devices.card.cardkit.calypso.CalypsoSam;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.date.RealTimeDate;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
+import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,16 +22,16 @@ public class Event extends File<Event> {
     private int transactionNumber;
     private TransactionType transactionType;
     private int networkId;
-    private int serviceProvider;
+    private int provider;
     private int locationId;
     private RealTimeDate dateTimeStamp;
     private int amount;
-    private int firstServiceProvider;
-    private int firstLocationId;
+    private int firstServiceProvider = 0;
+    private int firstLocationId = 0;
     private RealTimeDate firstDateTimeStamp;
-    private int firstPassenger;
-    private int firstContractsUsed;
-    private int data;
+    private int firstPassenger = 0;
+    private int firstContractsUsed = 0;
+    private int data = 0;
 
     public Event(int id) {
         super(null, CDMX.EVENT_FILE);
@@ -37,7 +40,25 @@ public class Event extends File<Event> {
 
     @Override
     public byte[] unparse() {
-        return new byte[0];
+        BitUtil bit = new BitUtil(CDMX.RECORD_SIZE * 8);
+
+        bit.setNextInteger(version, 8);
+        bit.setNextInteger(transactionNumber, 24);
+        bit.setNextInteger(transactionType.getValue(), 8);
+        bit.setNextInteger(networkId, 8);
+        bit.setNextInteger(provider, 8);
+        bit.setNextInteger(locationId, 24);
+        bit.setNextInteger(dateTimeStamp.getCode(), 32);
+        bit.setNextInteger(amount, 24);
+        bit.setNextInteger(firstServiceProvider, 8);
+        bit.setNextInteger(firstLocationId, 24);
+        bit.setNextInteger(firstDateTimeStamp.getCode(), 32);
+        bit.setNextInteger(firstPassenger, 8);
+        bit.setNextInteger(firstContractsUsed, 8);
+        bit.setNextInteger(data, 16);
+
+        setContent(HexUtil.toHex(bit.getData()));
+        return bit.getData();
     }
 
     @Override
@@ -46,7 +67,7 @@ public class Event extends File<Event> {
         this.transactionNumber    = ByteUtils.extractInt(data, 1, 3, false);
         this.transactionType      = TransactionType.decode(data[4] & 0xff);
         this.networkId            = data[5] & 0xff;
-        this.serviceProvider      = data[6] & 0xff;
+        this.provider             = data[6] & 0xff;
         this.locationId           = ByteUtils.extractInt(data, 7, 3, false);
         this.dateTimeStamp        = new RealTimeDate(ByteUtils.extractInt(data, 10, 4, false));
         this.amount               = ByteUtils.extractInt(data, 14, 3, false);
@@ -60,4 +81,30 @@ public class Event extends File<Event> {
         setContent(HexUtil.toHex(data));
         return this;
     }
+
+    public static Event builEvent(
+            TransactionType transactionType,
+            CalypsoSam calypsoSam,
+            int transactionNumber,
+            int locationId,
+            int amount) {
+
+        Event event = new Event(1);
+        event.setTransactionType(transactionType);
+        event.setTransactionNumber(transactionNumber);
+        event.setLocationId(locationId);
+        event.setAmount(amount);
+
+        // sam data
+        event.setProvider(calypsoSam.getSamProviderCode());
+        event.setVersion(calypsoSam.getSamVersion());
+        event.setNetworkId(calypsoSam.getSamVersion());
+
+        event.setDateTimeStamp(RealTimeDate.now());
+        event.setFirstDateTimeStamp(RealTimeDate.now());
+
+        event.unparse();
+        return event;
+    }
+
 }

@@ -1,6 +1,5 @@
-package com.idear.devices.card.cardkit.core.datamodel;
+package com.idear.devices.card.cardkit.core.datamodel.date;
 
-import com.idear.devices.card.cardkit.core.datamodel.date.ByteDate;
 import com.idear.devices.card.cardkit.core.utils.DateUtils;
 
 import java.time.LocalDate;
@@ -25,6 +24,10 @@ public class ReverseDate extends ByteDate {
     public static LocalDate toLocalDate(int reverseDate) {
         int normal = reverseDate ^ 0x3fff;
         return DateUtils.DAYS_UNTIL_1997_01_01.plusDays(normal);
+    }
+
+    public static ReverseDate now() {
+        return new ReverseDate(toInt(LocalDate.now()));
     }
 
 

@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.core.exception.CardException;
@@ -75,19 +75,10 @@ public class AppendEditCardFile extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-
         if (!reader.execute(new SimpleReadCard()).isOk())
             throw new CardException("no card on reader");
 
-        SecureRegularModeTransactionManager cardTransactionManager =
-                ReaderPCSC.calypsoCardApiFactory
-                        .createSecureRegularModeTransactionManager(
-                                reader.getCardReader(),
-                                reader.getCalypsoCard(),
-                                reader.getCalypsoSam().getSymmetricCryptoSettingsRT()
-                        );
-
-        cardTransactionManager
+        reader.getCardTransactionManager()
                 .prepareOpenSecureSession(WriteAccessLevel.LOAD)
                 .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
                 .prepareAppendRecord(

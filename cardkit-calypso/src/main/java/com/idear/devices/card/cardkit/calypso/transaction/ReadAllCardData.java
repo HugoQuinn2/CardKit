@@ -1,5 +1,8 @@
 package com.idear.devices.card.cardkit.calypso.transaction;
 
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFile;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFilePartially;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -16,8 +19,6 @@ import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
 import org.eclipse.keypop.calypso.card.card.SvLoadLogRecord;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.SortedMap;
 
 /**

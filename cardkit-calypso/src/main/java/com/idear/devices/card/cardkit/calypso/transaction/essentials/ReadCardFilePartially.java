@@ -1,5 +1,6 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
+import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
@@ -29,7 +30,7 @@ import java.util.SortedMap;
  * @see Transaction
  * @see ReaderPCSC
  * @see CalypsoCard
- * @see com.idear.devices.card.cardkit.calypso.transaction.SimpleReadCard
+ * @see SimpleReadCard
  */
 @Getter
 public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]>, ReaderPCSC> {
@@ -39,8 +40,6 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
     private final byte toRecord;
     private final int offset;
     private final int bytesToRead;
-
-    private TransactionResult<CalypsoCardCDMX> simpleRead;
 
     /**
      * Constructs a new {@code ReadCardFilePartially} transaction.
@@ -79,22 +78,12 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
      */
     @Override
     public TransactionResult<SortedMap<Integer, byte[]>> execute(ReaderPCSC reader) {
-
-        simpleRead = reader.execute(new SimpleReadCard());
-        if (!simpleRead.isOk())
-            throw new ReaderException("no card was found in the reader");
+        if (!reader.execute(new SimpleReadCard()).isOk())
+            throw new CardException("no card on reader");
 
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
-        SecureRegularModeTransactionManager cardTransactionManager =
-                ReaderPCSC.calypsoCardApiFactory
-                        .createSecureRegularModeTransactionManager(
-                                reader.getCardReader(),
-                                calypsoCard,
-                                reader.getCalypsoSam().getSymmetricCryptoSettingsRT()
-                        );
-
-        cardTransactionManager
+        reader.getCardTransactionManager()
                 .prepareReadRecordsPartially(
                         fileId,
                         fromRecord,

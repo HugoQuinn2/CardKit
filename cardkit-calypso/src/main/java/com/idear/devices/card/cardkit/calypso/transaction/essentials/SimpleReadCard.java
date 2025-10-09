@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
