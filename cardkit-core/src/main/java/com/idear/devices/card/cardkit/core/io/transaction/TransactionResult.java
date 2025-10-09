@@ -26,4 +26,9 @@ public class TransactionResult<T> extends Item {
         return is(TransactionStatus.OK);
     }
 
+    public TransactionResult<T> print() {
+        System.out.println(this.toJson());
+        return this;
+    }
+
 }
