@@ -10,6 +10,7 @@ import lombok.EqualsAndHashCode;
 @Builder
 @Data
 public class TransactionResult<T> extends Item {
+    private String transactionName;
     private TransactionStatus transactionStatus;
     private T data;
     private String message;
