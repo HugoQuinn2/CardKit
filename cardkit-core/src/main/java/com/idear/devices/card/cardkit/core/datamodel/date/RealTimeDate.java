@@ -9,12 +9,17 @@ import lombok.EqualsAndHashCode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class RealTimeDate extends Item implements IDataModel {
     private final int code;
     private LocalDateTime date;
+
+    public static RealTimeDate now() {
+        return new RealTimeDate(DateUtils.fromRealTime(LocalDateTime.now()));
+    }
 
     public RealTimeDate(int code) {
         this.code = code;
