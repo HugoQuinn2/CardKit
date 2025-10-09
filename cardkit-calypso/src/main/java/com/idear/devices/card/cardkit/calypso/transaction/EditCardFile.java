@@ -10,7 +10,6 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
-import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 
 /**
  * Represents a secure transaction to modify a specific record in a Calypso card file.
@@ -34,6 +33,7 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
 
     private final File<?> file;
     private final int recordNumber;
+    private final WriteAccessLevel writeAccessLevel;
 
     /**
      * Constructs a new {@link EditCardFile} transaction.
@@ -41,10 +41,11 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
      * @param file          The file containing the record to edit.
      * @param recordNumber  The index of the record to update.
      */
-    public EditCardFile(File<?> file, int recordNumber) {
+    public EditCardFile(File<?> file, int recordNumber, WriteAccessLevel writeAccessLevel) {
         super("edit file");
         this.file = file;
         this.recordNumber = recordNumber;
+        this.writeAccessLevel = writeAccessLevel;
     }
 
     /**
@@ -63,17 +64,9 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
         if (!reader.execute(new SimpleReadCard()).isOk())
             throw new CardException("no card on reader");
 
-        SecureRegularModeTransactionManager cardTransactionManager =
-                ReaderPCSC.calypsoCardApiFactory
-                        .createSecureRegularModeTransactionManager(
-                                reader.getCardReader(),
-                                reader.getCalypsoCard(),
-                                reader.getCalypsoSam().getSymmetricCryptoSettingsRT()
-                        );
-
         // edit file card
-        cardTransactionManager
-                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+        reader.getCardTransactionManager()
+                .prepareOpenSecureSession(writeAccessLevel)
                 .prepareUpdateRecord(
                         file.getFileId(),
                         recordNumber,
