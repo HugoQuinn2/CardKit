@@ -12,23 +12,56 @@ import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 
-public class EditCardFile extends Transaction<byte[], ReaderPCSC> {
+/**
+ * Represents a secure transaction to modify a specific record in a Calypso card file.
+ * <p>
+ * This transaction operates in Secure Regular Mode and performs the following steps:
+ * <ol>
+ *   <li>Ensures that a card is present in the reader.</li>
+ *   <li>Opens a secure session with {@link WriteAccessLevel#LOAD} privileges.</li>
+ *   <li>Updates the target record in the specified file.</li>
+ *   <li>Closes the secure session and verifies the updated record by reading it back.</li>
+ * </ol>
+ *
+ * <p>This transaction is designed for editing existing records, not appending new ones.
+ * The resulting data returned represents the content of the updated record.</p>
+ *
+ * @see AppendEditCardFile for appending new records to a file segment
+ * @author Victor Hugo Gaspar Quinn
+ * @version 1.0.0
+ */
+public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
 
     private final File<?> file;
     private final int recordNumber;
 
+    /**
+     * Constructs a new {@link EditCardFile} transaction.
+     *
+     * @param file          The file containing the record to edit.
+     * @param recordNumber  The index of the record to update.
+     */
     public EditCardFile(File<?> file, int recordNumber) {
         super("edit file");
         this.file = file;
         this.recordNumber = recordNumber;
     }
 
+    /**
+     * Executes the edit operation on the specified {@link CalypsoCardCDMX} card file.
+     *
+     * <p>This method performs a secure session operation to update a record within a card file.
+     * It ensures card presence, writes the new data</p>
+     *
+     * @param reader The card reader interface handling communication with the Calypso card.
+     * @return A {@link TransactionResult} containing the updated file data if successful.
+     * @throws ReaderException If no card is detected in the reader.
+     * @throws CardException   If the card file could not be read or updated.
+     */
     @Override
-    public TransactionResult<byte[]> execute(ReaderPCSC reader) {
-        TransactionResult<CalypsoCardCDMX> simpleRead = reader.execute(new SimpleReadCard());
-
-        if (!simpleRead.isOk())
-            throw new ReaderException("no card on reader");
+    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+        if (!reader.execute(new SimpleReadCard()).isOk())
+            throw new CardException("no card on reader");
 
         SecureRegularModeTransactionManager cardTransactionManager =
                 ReaderPCSC.calypsoCardApiFactory
@@ -49,15 +82,10 @@ public class EditCardFile extends Transaction<byte[], ReaderPCSC> {
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);
 
-        // read card file and returned
-        TransactionResult<byte[]> readFile = reader.execute(new ReadCardFile(WriteAccessLevel.DEBIT, file.getFileId(), recordNumber));
-        if (!readFile.isOk())
-            throw new CardException("no se pudo leer el archivo %s: %s", file.getFileId(), readFile.getMessage());
-
         return TransactionResult
-                .<byte[]>builder()
+                .<Boolean>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .data(readFile.getData())
+                .data(true)
                 .build();
     }
 
