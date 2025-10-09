@@ -4,12 +4,19 @@ import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 import java.time.LocalDate;
 
@@ -95,42 +102,49 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
         if (!reader.execute(new SimpleReadCard()).isOk())
             throw new CardException("no card on reader");
 
-        if (contract.isExpired(daysOffset)) {
-            // Renew duration and start date
-            contract.setDuration(duration);
-            contract.setStartDate(new ReverseDate(ReverseDate.toInt(LocalDate.now())));
+        if (!contract.isExpired(daysOffset))
+            return TransactionResult
+                    .<Boolean>builder()
+                    .transactionStatus(TransactionStatus.OK)
+                    .message("card contract does not require renewal expiration date: " + contract.getExpirationDate(daysOffset))
+                    .data(true)
+                    .build();
 
-            // Save event before renew contract
-            Event event = Event.builEvent(
-                    TransactionType.SV_CONTRACT_RENEWAL,
-                    reader.getCalypsoSam(),
-                    calypsoCardCDMX.getEvents().getLast().getTransactionNumber() + 1,
-                    locationId,
-                    0
-                    );
+        // Renew duration and start date
+        contract.setDuration(duration);
+        contract.setStartDate(ReverseDate.now());
 
-            // If the event was saved the contract is renewed
-            if (reader.execute(new AppendEditCardFile(event)).isOk())
-                if (reader.execute(new EditCardFile(contract, 1)).isOk())
-                    return TransactionResult
-                        .<Boolean>builder()
-                        .transactionStatus(TransactionStatus.OK)
-                        .message("card contract renewed expiration date: " +
-                                contract.getSaleDate().getDate().plusMonths(
-                                        contract.getDuration())
-                                        .minusDays(daysOffset))
-                        .data(true)
-                        .build();
-        }
+        // Make event before renew contract
+        Event event = Event.builEvent(
+                TransactionType.SV_CONTRACT_RENEWAL,
+                reader.getCalypsoSam(),
+                calypsoCardCDMX.getEvents().getLast().getTransactionNumber() + 1,
+                locationId,
+                0
+        );
 
-        // No renewal needed
+        // Save event on card and renew contract
+        reader.getCardTransactionManager()
+                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
+                .processCommands(ChannelControl.KEEP_OPEN);
+
+        reader.getCardTransactionManager()
+                .prepareUpdateRecord(
+                        contract.getFileId(),
+                        1,
+                        contract.unparse()
+                )
+                .prepareAppendRecord(
+                        event.getFileId(),
+                        event.unparse())
+                .prepareCloseSecureSession()
+                .processCommands(ChannelControl.CLOSE_AFTER);
+
         return TransactionResult
                 .<Boolean>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message("card contract does not require renewal expiration date: " +
-                        contract.getSaleDate().getDate().plusMonths(
-                                contract.getDuration())
-                                .minusDays(daysOffset))
+                .message("card contract renewed, expiration date: " + contract.getExpirationDate(daysOffset))
                 .data(true)
                 .build();
     }
