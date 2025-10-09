@@ -74,7 +74,7 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
      * @param duration the new duration value
      * @return this instance for method chaining
      */
-    public RenewedContract setDuration(int duration) {
+    public RenewedContract duration(int duration) {
         this.duration = duration;
         return this;
     }
