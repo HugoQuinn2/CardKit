@@ -31,7 +31,7 @@ import java.util.SortedMap;
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
+public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private final WriteAccessLevel writeAccessLevel;
 
@@ -40,12 +40,12 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
     private TransactionResult<SortedMap<Integer, byte[]>> readFiles;
 
     /**
-     * Create an {@link ReadAllCardData} transaction, this transaction read all {@link CalypsoCard} data and parse
+     * Create an {@link ReadCardData} transaction, this transaction read all {@link CalypsoCard} data and parse
      * to {@link CalypsoCardCDMX}
      *
      * @param writeAccessLevel the level to read
      */
-    public ReadAllCardData(WriteAccessLevel writeAccessLevel, CalypsoCardCDMX calypsoCardCDMX) {
+    public ReadCardData(WriteAccessLevel writeAccessLevel, CalypsoCardCDMX calypsoCardCDMX) {
         super("read card");
         this.writeAccessLevel = writeAccessLevel;
         this.cdmxCard = calypsoCardCDMX;
@@ -71,6 +71,7 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
                 .<CalypsoCardCDMX>builder()
                 .transactionStatus(TransactionStatus.OK)
                 .data(cdmxCard)
+                .message("All card data '" + cdmxCard.getSerial() + "' was read")
                 .build();
     }
 
