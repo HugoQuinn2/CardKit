@@ -78,8 +78,9 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
      */
     @Override
     public TransactionResult<SortedMap<Integer, byte[]>> execute(ReaderPCSC reader) {
-        if (!reader.execute(new SimpleReadCard()).isOk())
-            throw new CardException("no card on reader");
+        if (!reader.getCardReader().isCardPresent()) {
+            throw new ReaderException("No card on reader");
+        }
 
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 

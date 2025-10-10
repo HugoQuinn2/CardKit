@@ -14,6 +14,7 @@ import org.eclipse.keyple.card.generic.CardTransactionManager;
 import org.eclipse.keyple.card.generic.ChannelControl;
 import org.eclipse.keyple.card.generic.GenericExtensionService;
 import org.eclipse.keyple.core.service.SmartCardServiceProvider;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.SymmetricCryptoSecuritySetting;
@@ -35,6 +36,7 @@ public class CalypsoSam extends Sam {
 
     private final String samName;
     private final String lockSecret;
+    private String serial;
 
     @ToString.Exclude
     private LegacySam legacySam;
@@ -88,6 +90,7 @@ public class CalypsoSam extends Sam {
 
         samReader = Assert.isNull(ReaderPCSC.plugin.getReader(samName), "sam reader '%s' not founded.");
         legacySam = initCalypsoSam(samReader, lockSecret);
+        serial = HexUtil.toHex(legacySam.getSerialNumber());
     }
 
     @Getter

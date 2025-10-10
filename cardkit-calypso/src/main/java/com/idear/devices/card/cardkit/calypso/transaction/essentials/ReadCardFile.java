@@ -8,6 +8,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import lombok.Getter;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.ElementaryFile;
@@ -76,8 +77,9 @@ public class ReadCardFile extends Transaction<byte[], ReaderPCSC> {
      */
     @Override
     public TransactionResult<byte[]> execute(ReaderPCSC reader) {
-        if (!reader.execute(new SimpleReadCard()).isOk())
-            throw new CardException("no card on reader");
+        if (!reader.getCardReader().isCardPresent()) {
+            throw new ReaderException("No card on reader");
+        }
 
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 

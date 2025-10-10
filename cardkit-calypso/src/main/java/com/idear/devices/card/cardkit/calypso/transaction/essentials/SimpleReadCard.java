@@ -2,15 +2,20 @@ package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.calypso.file.DebitLog;
+import com.idear.devices.card.cardkit.calypso.file.LoadLog;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
+import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
+import org.eclipse.keypop.calypso.card.card.SvLoadLogRecord;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
@@ -24,7 +29,10 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  */
 @EqualsAndHashCode(callSuper = true)
 @Getter
+@Slf4j
 public class SimpleReadCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
+
+    private CalypsoCardCDMX calypsoCardCDMX;
 
     /**
      * Creates a new transaction for reading a Calypso card.
@@ -43,7 +51,7 @@ public class SimpleReadCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
     @Override
     public TransactionResult<CalypsoCardCDMX> execute(ReaderPCSC reader) {
         // Initialize the card model to store the read data
-        CalypsoCardCDMX calypsoCardCDMX = new CalypsoCardCDMX();
+        calypsoCardCDMX = new CalypsoCardCDMX();
 
         // Ensure the reader session is up-to-date
         reader.updateCalypsoCardSession();
@@ -75,11 +83,28 @@ public class SimpleReadCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
         // Store the card balance
         calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
+        readLogFiles(reader);
 
         // Return the result
         return TransactionResult.<CalypsoCardCDMX>builder()
                 .transactionStatus(TransactionStatus.OK)
                 .data(calypsoCardCDMX)
                 .build();
+    }
+
+    private void readLogFiles(ReaderPCSC reader) {
+        SvDebitLogRecord debitLogRecord = reader.getCalypsoCard().getSvDebitLogLastRecord();
+        if (debitLogRecord != null) {
+            calypsoCardCDMX.setDebitLog(new DebitLog().parse(debitLogRecord));
+        } else {
+            log.warn("failed to read debit log record");
+        }
+
+        SvLoadLogRecord loadLogRecord = reader.getCalypsoCard().getSvLoadLogRecord();
+        if (loadLogRecord != null) {
+            calypsoCardCDMX.setLoadLog(new LoadLog().parse(loadLogRecord));
+        } else {
+            log.warn("failed to read load log record");
+        }
     }
 }

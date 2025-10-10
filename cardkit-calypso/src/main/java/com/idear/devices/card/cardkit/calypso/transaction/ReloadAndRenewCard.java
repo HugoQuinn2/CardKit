@@ -93,7 +93,8 @@ public class ReloadAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
         reportProgress(20, "Contract validated and balance checked");
 
         // Step 3: Renew contract
-        reader.execute(new RenewedContract(calypsoCardCDMX, locationId, contract, contractDaysOffset));
+        if (contract.isExpired(contractDaysOffset))
+            reader.execute(new RenewedContract(calypsoCardCDMX, locationId, contract, contractDaysOffset));
         reportProgress(40, "Contract renewed");
 
         // Step 4: Create reload event

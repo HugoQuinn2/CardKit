@@ -1,8 +1,5 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFile;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFilePartially;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -16,8 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
-import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
-import org.eclipse.keypop.calypso.card.card.SvLoadLogRecord;
 
 import java.util.SortedMap;
 
@@ -41,7 +36,6 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
     private final WriteAccessLevel writeAccessLevel;
 
     private CalypsoCardCDMX cdmxCard;
-    private TransactionResult<CalypsoCardCDMX> simpleRead;
     private TransactionResult<byte[]> readFile;
     private TransactionResult<SortedMap<Integer, byte[]>> readFiles;
 
@@ -51,9 +45,10 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
      *
      * @param writeAccessLevel the level to read
      */
-    public ReadAllCardData(WriteAccessLevel writeAccessLevel) {
+    public ReadAllCardData(WriteAccessLevel writeAccessLevel, CalypsoCardCDMX calypsoCardCDMX) {
         super("read card");
         this.writeAccessLevel = writeAccessLevel;
+        this.cdmxCard = calypsoCardCDMX;
     }
 
     /**
@@ -65,15 +60,10 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
     @Override
     public TransactionResult<CalypsoCardCDMX> execute(ReaderPCSC reader) {
 
-        simpleRead = reader.execute(new SimpleReadCard());
-
-        if (!simpleRead.isOk())
-            throw new ReaderException(simpleRead.getMessage());
-
-        cdmxCard = simpleRead.getData();
+        if (!reader.getCardReader().isCardPresent())
+            throw new ReaderException("no card on reader");
 
         readEnvironmentFile(reader);
-        readLogFiles(reader);
         readEventFiles(reader);
         readContractFiles(reader);
 
@@ -89,28 +79,10 @@ public class ReadAllCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
                 new ReadCardFile(writeAccessLevel, CDMX.ENVIRONMENT_FILE, 1)
         );
 
-        cdmxCard.setBalance(reader.getCalypsoCard().getSvBalance());
-
         if (readFile.isOk()) {
             cdmxCard.setEnvironment(new Environment().parse(readFile.getData()));
         } else {
             log.warn("failed to read environment file: {}", readFile.getMessage());
-        }
-    }
-
-    private void readLogFiles(ReaderPCSC reader) {
-        SvDebitLogRecord debitLogRecord = reader.getCalypsoCard().getSvDebitLogLastRecord();
-        if (debitLogRecord != null) {
-            cdmxCard.setDebitLog(new DebitLog().parse(debitLogRecord));
-        } else {
-            log.warn("failed to read debit log record");
-        }
-
-        SvLoadLogRecord loadLogRecord = reader.getCalypsoCard().getSvLoadLogRecord();
-        if (loadLogRecord != null) {
-            cdmxCard.setLoadLog(new LoadLog().parse(loadLogRecord));
-        } else {
-            log.warn("failed to read load log record");
         }
     }
 
