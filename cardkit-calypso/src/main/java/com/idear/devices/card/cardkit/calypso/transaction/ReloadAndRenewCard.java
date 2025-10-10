@@ -45,6 +45,7 @@ public class ReloadAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
     private int provider = 0;
     private int maxBalance = 500_000;
     private int contractDaysOffset = 15;
+    private TransactionType transactionType = TransactionType.RELOAD;
 
     /**
      * Constructs a reload and renew transaction for a specific card.
@@ -99,7 +100,7 @@ public class ReloadAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
 
         // Step 4: Create reload event
         Event event = Event.builEvent(
-                TransactionType.RELOAD,
+                transactionType,
                 reader.getCalypsoSam(),
                 calypsoCardCDMX.getEvents().getLast().getTransactionNumber() + 1,
                 locationId,
@@ -168,6 +169,11 @@ public class ReloadAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
      */
     public ReloadAndRenewCard provider(int provider) {
         this.provider = provider;
+        return this;
+    }
+
+    public ReloadAndRenewCard transactionType(TransactionType transactionType) {
+        this.transactionType = transactionType;
         return this;
     }
 }
