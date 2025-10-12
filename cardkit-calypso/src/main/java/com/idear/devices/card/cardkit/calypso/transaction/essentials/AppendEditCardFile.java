@@ -1,6 +1,7 @@
 package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.calypso.transaction.RenewedCard;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -42,7 +43,7 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * @see File
  * @see ReaderPCSC
  * @see SecureRegularModeTransactionManager
- * @see com.idear.devices.card.cardkit.calypso.transaction.RenewedContract
+ * @see RenewedCard
  *
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0.0

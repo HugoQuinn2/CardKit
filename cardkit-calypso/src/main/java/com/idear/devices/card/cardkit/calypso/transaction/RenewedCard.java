@@ -3,7 +3,7 @@ package com.idear.devices.card.cardkit.calypso.transaction;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.file.Event;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
@@ -46,7 +46,7 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0
  */
-public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
+public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final int locationId;
@@ -63,7 +63,7 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
      * @param contract        the contract to be verified and potentially renewed
      * @param daysOffset      the number of days before expiration to trigger a renewal
      */
-    public RenewedContract(CalypsoCardCDMX calypsoCardCDMX, int locationId, Contract contract, int daysOffset) {
+    public RenewedCard(CalypsoCardCDMX calypsoCardCDMX, int locationId, Contract contract, int daysOffset) {
         super("renewed contract");
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.locationId = locationId;
@@ -77,7 +77,7 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
      * @param duration the new duration value
      * @return this instance for method chaining
      */
-    public RenewedContract duration(int duration) {
+    public RenewedCard duration(int duration) {
         this.duration = duration;
         return this;
     }
@@ -110,15 +110,6 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
         contract.setDuration(duration);
         contract.setStartDate(ReverseDate.now());
 
-        // Make event before renew contract
-        Event event = Event.builEvent(
-                TransactionType.SV_CONTRACT_RENEWAL,
-                reader.getCalypsoSam(),
-                calypsoCardCDMX.getEvents().getLast().getTransactionNumber() + 1,
-                locationId,
-                0
-        );
-
         // Save event on card and renew contract
         reader.getCardTransactionManager()
                 .prepareOpenSecureSession(WriteAccessLevel.LOAD)
@@ -130,10 +121,11 @@ public class RenewedContract extends Transaction<Boolean, ReaderPCSC> {
                         contract.getFileId(),
                         1,
                         contract.unparse()
-                )
-                .prepareAppendRecord(
-                        event.getFileId(),
-                        event.unparse())
+                );
+
+        reader.execute(new SaveEvent(TransactionType.SV_CONTRACT_RENEWAL, locationId, 0));
+
+        reader.getCardTransactionManager()
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.CLOSE_AFTER);
 

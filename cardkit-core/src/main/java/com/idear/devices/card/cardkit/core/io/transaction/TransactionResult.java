@@ -2,13 +2,12 @@ package com.idear.devices.card.cardkit.core.io.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.io.Item;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 @EqualsAndHashCode(callSuper = true)
 @Builder
-@Data
+@Getter
+@Setter
 public class TransactionResult<T> extends Item {
     private String transactionName;
     private TransactionStatus transactionStatus;
@@ -29,6 +28,17 @@ public class TransactionResult<T> extends Item {
     public TransactionResult<T> print() {
         System.out.println(this.toJson());
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "[%s - %s] > %s {%s ms}",
+                transactionName.toUpperCase(),
+                transactionStatus,
+                message,
+                time
+        );
     }
 
 }

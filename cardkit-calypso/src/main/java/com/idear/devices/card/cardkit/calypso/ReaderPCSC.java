@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.calypso;
 
+import com.idear.devices.card.cardkit.calypso.file.Event;
 import com.idear.devices.card.cardkit.core.io.reader.Reader;
 import com.idear.devices.card.cardkit.core.utils.Assert;
 import lombok.Data;
@@ -22,6 +23,8 @@ import org.eclipse.keypop.reader.selection.spi.SmartCard;
 import org.eclipse.keypop.reader.spi.CardReaderObservationExceptionHandlerSpi;
 import org.eclipse.keypop.reader.spi.CardReaderObserverSpi;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -84,6 +87,8 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     public static final CalypsoExtensionService calypsoExtensionService = CalypsoExtensionService.getInstance();
     @ToString.Exclude
     public static final CalypsoCardApiFactory calypsoCardApiFactory = calypsoExtensionService.getCalypsoCardApiFactory();
+    @ToString.Exclude
+    private final List<EventListener> cardEventListenerList = new ArrayList<>();
 
     /**
      * Retrieves the set of available reader names registered in the PCSC plugin.
@@ -216,6 +221,11 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
         public void onReaderEvent(CardReaderEvent e) {
             fireEvent(e);
         }
+    }
+
+    public void fireCardEvent(Event event) {
+        for (EventListener eventListener : cardEventListenerList)
+            eventListener.onEvent(event);
     }
 
 }

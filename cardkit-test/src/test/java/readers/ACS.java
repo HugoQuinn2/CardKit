@@ -3,10 +3,11 @@ package readers;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.*;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadAllCardData;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardData;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.ContractStatus;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
@@ -40,13 +41,14 @@ public class ACS {
 
         reader.init();
         reader.initCardObserver(aidCDMX);
+        reader.getCardEventListenerList().add(System.out::println);
 
         reader.addListeners(event -> {
             if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
                 return;
 
             CalypsoCardCDMX calypsoCardCDMX = reader.execute(
-                            new ReadAllCardData(WriteAccessLevel.DEBIT,
+                            new ReadCardData(WriteAccessLevel.DEBIT,
                                     reader.execute(new SimpleReadCard()).getData()))
                     .getData();
             Contract contract = calypsoCardCDMX.getContracts().findFirst(c -> c.getProvider().equals(provider)).get();
@@ -56,11 +58,11 @@ public class ACS {
             reader.execute(new EditCardFile(contract, 1, WriteAccessLevel.LOAD));
 
             // Renew contract
-            System.out.println(reader.execute(new RenewedContract(calypsoCardCDMX, locationId, contract, daysOffset)).toJson());
-            System.out.println(reader.execute(
-                            new ReadAllCardData(WriteAccessLevel.DEBIT,
-                                    reader.execute(new SimpleReadCard()).getData()))
-                    .toJson());
+//            System.out.println(reader.execute(new RenewedContract(calypsoCardCDMX, locationId, contract, daysOffset)).toJson());
+//            System.out.println(reader.execute(
+//                            new ReadCardData(WriteAccessLevel.DEBIT,
+//                                    reader.execute(new SimpleReadCard()).getData()))
+//                    .toJson());
         });
 
         Thread.sleep(10000);
@@ -82,7 +84,7 @@ public class ACS {
         Provider providerDevice = Provider.CABLEBUS;
 
         // Reload params
-        AtomicInteger amount = new AtomicInteger(32_767);
+        AtomicInteger amount = new AtomicInteger(10_000);
         int maxAmount = 500_000;
 
 
@@ -90,32 +92,22 @@ public class ACS {
         reader.init();
         reader.initCardObserver(aidCDMX);
 
+        reader.getCardEventListenerList().add(System.out::println);
+
         reader.addListeners(event -> {
             // Just work with card matched
             if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
                 return;
-            long time = System.currentTimeMillis();
 
             // 1. First verification
-            CalypsoCardCDMX calypsoCardCDMX = reader.execute(new SimpleReadCard()).getData();
+            CalypsoCardCDMX calypsoCardCDMX = reader.execute(new ReadAllCard()).getData();
+            Contract contract = calypsoCardCDMX.getContracts().findFirst(
+                    c -> c.getStatus().equals(ContractStatus.CONTRACT_PARTLY_USED)
+            ).get();
 
-            if (!isSamOnWhiteList(reader.getCalypsoSam().getSerial()))
-                return;
-            if (isCardOnBlackList(calypsoCardCDMX.getSerial()))
-                System.out.println("Card on black card");
+            if (contract.isExpired(15))
+                reader.execute(new RenewedCard(calypsoCardCDMX, locationId, contract, 15));
 
-            // Read card and find a valid contract
-            calypsoCardCDMX = reader.execute(new ReadAllCardData(WriteAccessLevel.DEBIT, calypsoCardCDMX)).getData();
-            Optional<Contract> optionalContract = calypsoCardCDMX.getContracts().findFirst(
-                    c ->
-                            !c.getProvider().equals(Provider.RFU) &&
-                                    !c.getStatus().equals(ContractStatus.CONTRACT_NEVER_USED)
-            );
-
-            if (!optionalContract.isPresent())
-                throw new CardException("No valid contract for provider ");
-
-            Contract contract = optionalContract.get();
 
             TransactionResult<?> result = null;
             switch (action) {
@@ -131,13 +123,8 @@ public class ACS {
                     break;
             }
 
-            System.out.printf(
-                    "%s > %s -> %s \t[%s ms]%n",
-                    action,
-                    result.getTransactionStatus(),
-                    result.getMessage(),
-                    System.currentTimeMillis() - time
-            );
+            System.out.println(result);
+//            reader.execute(new ReadAllCard()).print();
         });
 
         safeWait(-1);
@@ -150,7 +137,7 @@ public class ACS {
             int locationId,
             int amount,
             int maxAmount) {
-        return readerPCSC.execute(new ReloadAndRenewCard(calypsoCardCDMX, amount, contract, locationId).maxBalance(maxAmount));
+        return readerPCSC.execute(new ReloadCard(calypsoCardCDMX, amount, contract, locationId).maxBalance(maxAmount));
     }
 
     private TransactionResult<?> handlerDebit(
@@ -159,7 +146,7 @@ public class ACS {
             Contract contract,
             int locationId,
             int amount) {
-        return readerPCSC.execute(new DebitAndRenewCard(calypsoCardCDMX, contract, amount, locationId));
+        return readerPCSC.execute(new DebitCard(calypsoCardCDMX, contract, amount, locationId));
     }
 
     private boolean isCardOnBlackList(String serial) {
@@ -182,6 +169,45 @@ public class ACS {
         } catch (InterruptedException e) {
             // just nothing
         }
+    }
+
+    @Test
+    public void toEmptyBalance() throws Exception {
+        int daysOffset = 15;
+        int locationId = 1118481;
+        Provider provider = Provider.TREN_LIGERO;
+
+        ReaderPCSC reader = new ReaderPCSC(
+                BEA_ACS,
+                new CalypsoSam(SAM_ACS, lockSecret)
+        );
+
+        reader.init();
+        reader.initCardObserver(aidCDMX);
+
+        reader.addListeners(event -> {
+            if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
+                return;
+
+            CalypsoCardCDMX calypsoCardCDMX = reader.execute(new ReadAllCard()).print().getData();
+            Contract contract = calypsoCardCDMX.getContracts().findFirst(c -> c.getStatus().equals(ContractStatus.CONTRACT_PARTLY_USED)).get();
+
+            System.out.println(reader.execute(new BalanceCancellation(
+                    calypsoCardCDMX,
+                    locationId,
+                    contract,
+                    TransactionType.BALANCE_CANCELLATION_DEBIT_SAM_NOT_WHITELISTED
+            )));
+
+
+            System.out.println(reader.execute(
+                    new ReadCardData(
+                            WriteAccessLevel.DEBIT,
+                            reader.execute(
+                                    new SimpleReadCard()).getData())));
+        });
+
+        safeWait(-1);
     }
 
 }

@@ -3,7 +3,7 @@ package com.idear.devices.card.cardkit.calypso.transaction;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.file.Event;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.ContractStatus;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
@@ -27,7 +27,7 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * operations are executed until the full amount is deducted or the card balance reaches zero.
  */
 @Getter
-public class DebitAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
+public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
 
     private static final int MAX_POSSIBLE_AMOUNT = 32767;
 
@@ -46,7 +46,7 @@ public class DebitAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
      * @param amount          The debit amount.
      * @param locationId      The location identifier.
      */
-    public DebitAndRenewCard(CalypsoCardCDMX calypsoCardCDMX, Contract contract, int amount, int locationId) {
+    public DebitCard(CalypsoCardCDMX calypsoCardCDMX, Contract contract, int amount, int locationId) {
         super("debit card");
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.contract = contract;
@@ -98,7 +98,7 @@ public class DebitAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
 
         // --- Step 3: Renew contract if needed ---
         if (contract.isExpired(contractDaysOffset)) {
-            reader.execute(new RenewedContract(calypsoCardCDMX, locationId, contract, contractDaysOffset));
+            throw new CardException("Contract expired");
         }
 
         reportProgress(40, "Contract renewed");
@@ -111,22 +111,9 @@ public class DebitAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
         while (remainingAmount > 0 && calypsoCardCDMX.getBalance() > 0) {
             int debitChunk = Math.min(remainingAmount, MAX_POSSIBLE_AMOUNT);
 
-            // Build debit event
-            Event event = Event.builEvent(
-                    TransactionType.GENERAL_DEBIT,
-                    reader.getCalypsoSam(),
-                    calypsoCardCDMX.getEvents().getNextTransactionNumber(),
-                    locationId,
-                    debitChunk
-            );
-
-            if (provider > 0) {
-                event.setProvider(provider);
-            }
-
             // Execute single debit
             reportProgress(step, String.format("Debiting %d units...", debitChunk));
-            performDebit(reader, debitChunk, event);
+            performDebit(reader, debitChunk);
 
             // Update counters
             remainingAmount -= debitChunk;
@@ -158,9 +145,8 @@ public class DebitAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
      *
      * @param reader The reader instance.
      * @param debitAmount The amount to debit.
-     * @param event The event to log.
      */
-    private void performDebit(ReaderPCSC reader, int debitAmount, Event event) {
+    private void performDebit(ReaderPCSC reader, int debitAmount) {
         reader.getCardTransactionManager()
                 .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                 .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
@@ -170,18 +156,22 @@ public class DebitAndRenewCard extends Transaction<Boolean, ReaderPCSC> {
                 .prepareSvDebit(
                         debitAmount,
                         CompactDate.toBytes(CompactDate.now().getCode()),
-                        CompactTime.toBytes(CompactTime.now().getCode()))
-                .prepareAppendRecord(event.getFileId(), event.unparse())
+                        CompactTime.toBytes(CompactTime.now().getCode())
+                );
+
+        reader.execute(new SaveEvent(TransactionType.GENERAL_DEBIT, locationId, amount));
+
+        reader.getCardTransactionManager()
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.CLOSE_AFTER);
     }
 
-    public DebitAndRenewCard contractDaysOffset(int contractDaysOffset) {
+    public DebitCard contractDaysOffset(int contractDaysOffset) {
         this.contractDaysOffset = contractDaysOffset;
         return this;
     }
 
-    public DebitAndRenewCard provider(int provider) {
+    public DebitCard provider(int provider) {
         this.provider = provider;
         return this;
     }

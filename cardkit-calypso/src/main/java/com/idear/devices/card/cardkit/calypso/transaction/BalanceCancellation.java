@@ -19,13 +19,13 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
  * </p>
  *
  * <p>
- * The cancellation is performed through a {@link ReloadAndRenewCard} transaction.
+ * The cancellation is performed through a {@link ReloadCard} transaction.
  * If the process is successful, the result will contain {@code true} and a status of {@link TransactionStatus#OK}.
  * Otherwise, it will contain {@code false} and a status of {@link TransactionStatus#ERROR}.
  * </p>
  *
  * @see CalypsoCardCDMX
- * @see ReloadAndRenewCard
+ * @see ReloadCard
  * @see Transaction
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0.0
@@ -62,7 +62,7 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
      * <p>
      * The method first checks if a card is present in the reader.
      * If not, a {@link CardException} is thrown.
-     * It then creates a {@link ReloadAndRenewCard} transaction with a negative amount
+     * It then creates a {@link ReloadCard} transaction with a negative amount
      * equal to the current card balance and a contract offset of 1800 days (approximately 60 months).
      * </p>
      *
@@ -77,7 +77,7 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
 
         int negativeAmount = calypsoCardCDMX.getBalance() * -1;
         TransactionResult<Boolean> canceledBalance = reader.execute(
-                new ReloadAndRenewCard(
+                new ReloadCard(
                         calypsoCardCDMX,
                         negativeAmount,
                         contract,
