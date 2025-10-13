@@ -12,6 +12,10 @@ import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import lombok.Getter;
 import lombok.var;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 import java.util.SortedMap;
 
@@ -55,7 +59,14 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
         // prepare write event
         if (transactionType.isWritten()) {
             reader.getCardTransactionManager()
-                    .prepareAppendRecord(event.getFileId(), event.unparse());
+                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                    .processCommands(ChannelControl.KEEP_OPEN);
+
+            reader.getCardTransactionManager()
+                    .prepareAppendRecord(event.getFileId(), event.unparse())
+                    .prepareCloseSecureSession()
+                    .processCommands(ChannelControl.CLOSE_AFTER);
         }
 
         // Fire event on reader if the transaction is reported
@@ -71,7 +82,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
         );
 
         if (!readFiles.isOk())
-            throw new CardException("Error reading card events");
+            throw new CardException("Error reading card events: " + readFiles.getMessage());
 
         Events events = new Events();
         SortedMap<Integer, byte[]> partialEvents = readFiles.getData();
