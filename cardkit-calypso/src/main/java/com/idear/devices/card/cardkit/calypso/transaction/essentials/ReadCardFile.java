@@ -77,10 +77,6 @@ public class ReadCardFile extends Transaction<byte[], ReaderPCSC> {
      */
     @Override
     public TransactionResult<byte[]> execute(ReaderPCSC reader) {
-        if (!reader.getCardReader().isCardPresent()) {
-            throw new ReaderException("No card on reader");
-        }
-
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
         reader.getCardTransactionManager()

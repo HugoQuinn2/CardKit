@@ -123,7 +123,16 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
                         contract.unparse()
                 );
 
-        reader.execute(new SaveEvent(TransactionType.SV_CONTRACT_RENEWAL, locationId, 0));
+        reader.execute(
+                new SaveEvent(
+                        TransactionType.SV_CONTRACT_RENEWAL,
+                        calypsoCardCDMX.getEnvironment(),
+                        contract,
+                        0,
+                        locationId,
+                        0,
+                        calypsoCardCDMX.getEvents().getNextTransactionNumber())
+        );
 
         reader.getCardTransactionManager()
                 .prepareCloseSecureSession()

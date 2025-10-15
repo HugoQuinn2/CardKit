@@ -6,18 +6,20 @@ import lombok.Getter;
 @Getter
 public enum ContractStatus implements IDataModel {
 
-    CONTRACT_NEVER_USED(0x00),
-    CONTRACT_PARTLY_USED(0x01),
-    CONTRACT_TO_BE_RENEWED(0x03),
-    CONTRACT_SUSPENDED(0x3F),
-    CONTRACT_INVALID_AND_REFUNDED(0x7F),
-    CONTRACT_ERASABLE(0xFF),
-    RFU(-1);
+    CONTRACT_NEVER_USED(0x00, true),
+    CONTRACT_PARTLY_USED(0x01, true),
+    CONTRACT_TO_BE_RENEWED(0x03, true),
+    CONTRACT_SUSPENDED(0x3F, false),
+    CONTRACT_INVALID_AND_REFUNDED(0x7F, false),
+    CONTRACT_ERASABLE(0xFF, false),
+    RFU(-1, false);
 
     private final int value;
+    private final boolean accepted;
 
-    ContractStatus(int value) {
+    ContractStatus(int value, boolean accepted) {
         this.value = value;
+        this.accepted = accepted;
     }
 
     public static ContractStatus decode(int value) {

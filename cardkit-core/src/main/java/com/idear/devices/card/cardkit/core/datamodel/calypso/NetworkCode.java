@@ -7,6 +7,7 @@ import lombok.Getter;
 public enum NetworkCode implements IDataModel {
 
     CDMX(0x01),
+    PUEBAL(0x02),
     RFU(-1);
 
     private final int value;

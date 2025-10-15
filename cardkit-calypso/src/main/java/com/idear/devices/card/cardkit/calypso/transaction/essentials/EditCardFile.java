@@ -10,6 +10,8 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 /**
  * Represents a secure transaction to modify a specific record in a Calypso card file.
@@ -61,12 +63,16 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-        if (!reader.execute(new SimpleReadCard()).isOk())
-            throw new CardException("no card on reader");
+//        if (!reader.execute(new SimpleReadCard()).isOk())
+//            throw new CardException("no card on reader");
+
+        reader.getCardTransactionManager()
+                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
+                .processCommands(ChannelControl.KEEP_OPEN);
 
         // edit file card
         reader.getCardTransactionManager()
-                .prepareOpenSecureSession(writeAccessLevel)
                 .prepareUpdateRecord(
                         file.getFileId(),
                         recordNumber,

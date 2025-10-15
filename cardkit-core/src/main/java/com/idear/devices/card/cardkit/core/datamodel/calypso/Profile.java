@@ -1,66 +1,68 @@
 package com.idear.devices.card.cardkit.core.datamodel.calypso;
 
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+@Getter
+@RequiredArgsConstructor
 public enum Profile implements IDataModel {
+    // -----------------------------
+    // MULTIMODAL
+    // -----------------------------
+    GENERAL(0x00, 0x00, 0x00, 120, 0, PeriodType.encode(PeriodType.MONTH, 60), Tariff.STORED_VALUE, 0, Collections.emptyList()),
+    DIF(0x03, 0, 0, 60, 60, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
+    COPACO(0x05, 0, 0, 36, 36, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
+    CONTRALOR(0x0D, 0, 0, 60, 60, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
 
-    // Multimodal
-    GENERAL(0, 0, 0),
-    DIF(3, 0, 0),
-    COPACO(5, 0, 0),
-    CONTRALOR(0xD, 0, 0),
+    // -----------------------------
+    // MONOMODAL
+    // -----------------------------
+    POLICE(0x06, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    MAINTENANCE(0x07, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    CASH_COLLECTION(0x08, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    CARDS_SUPPLY(0x12, 0, 0, 0, 0, 0, null, 0, Collections.emptyList()),
+    SUPERVISOR(0x09, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    EMPLOYEE(0x0A, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    VALUE_DEPOSIT(0x0B, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
 
-    // Monomodal
-    POLICE(6, 0, 0),
-    MAINTENANCE(7, 0, 0),
-    CASH_COLLECTION(8, 0, 0),
-    CARDS_SUPPLY(12, 0, 0),
-    SUPERVISOR(9, 0, 0),
-    EMPLOYEE(0xA, 0, 0),
-    VALUE_DEPOSIT(0xB, 0, 0),
 
-    // TBD
-    ELDERLY_70(2, 0, 0),
-    ELDERLY_60(0xE, 0, 0),
-    STUDENT(4, 0, 0),
-    RFU (-1, -1, -1);
-
+    ELDERLY_70(0x02, 0, 0, 60, 0, 0, Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
+    ELDERLY_60(0x0E, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
+    STUDENT(0x04, 0, 0, 60, 6, PeriodType.encode(PeriodType.MONTH, 6), Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
+    RFU (-1, -1, -1, -1, -1, -1, null,0, Collections.emptyList());
 
     private final int prof1;
     private final int prof2;
     private final int prof3;
-
-    Profile(int prof1, int prof2, int prof3) {
-        this.prof1 = prof1;
-        this.prof2 = prof2;
-        this.prof3 = prof3;
-    }
+    private final int validityCard;
+    private final int validityProfile;
+    private final int validityContract;
+    private final Tariff tariff;
+    private final int passBack;
+    private final List<Equipment> equipmentsExceptions;
 
     public static Profile decode(int prof1, int prof2, int prof3) {
-        for (Profile v : values()) {
-            if (v.prof1 == prof1 &&
-                    v.prof2 == prof2 &&
-                    v.prof3 == prof3) {
-                return v;
-            }
-        }
-        return RFU;
+        return Arrays.stream(values())
+                .filter(p -> p.prof1 == prof1 && p.prof2 == prof2 && p.prof3 == prof3)
+                .findFirst()
+                .orElse(RFU);
     }
 
-    /**
-     * Returns the code as a string concatenation of prof1, prof2 and prof3.
-     * Example: DIF(3,0,0) -> "300"
-     */
     public String getCode() {
-        return String.format("%d%d%d", this.prof1, this.prof2, this.prof3);
+        return String.format("%d%d%d", prof1, prof2, prof3);
     }
 
-    /**
-     * Returns the numeric value formed by concatenating prof1, prof2 and prof3.
-     * Example: DIF(3,0,0) -> 300
-     */
     @Override
     public int getValue() {
         return Integer.parseInt(getCode());
+    }
+
+    public boolean isAllowedOn(Equipment equipment) {
+        return !equipmentsExceptions.contains(equipment);
     }
 }

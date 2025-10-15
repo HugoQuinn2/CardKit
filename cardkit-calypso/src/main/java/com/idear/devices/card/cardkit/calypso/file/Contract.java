@@ -7,8 +7,7 @@ import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.eclipse.keyple.core.util.HexUtil;
 
 import java.time.LocalDate;
@@ -24,7 +23,7 @@ public class Contract extends File<Contract> {
     private int rfu;
     private ReverseDate startDate;
     private int duration;
-    private int network;
+    private NetworkCode network;
     private Provider provider;
     private Modality modality;
     private int counterCode;
@@ -60,7 +59,7 @@ public class Contract extends File<Contract> {
         bit.setNextInteger(rfu, 2);
         bit.setNextInteger(startDate.getValue(), 14);
         bit.setNextInteger(duration, 8);
-        bit.setNextInteger(network, 8);
+        bit.setNextInteger(network.getValue(), 8);
         bit.setNextInteger(provider.getValue(), 8);
         bit.setNextInteger(modality.getValue(), 1);
         bit.setNextInteger(counterCode, 2);
@@ -100,9 +99,9 @@ public class Contract extends File<Contract> {
         this.version              = data[0] & 0xff;
         this.status               = ContractStatus.decode(data[1] & 0xff);
         this.rfu                  = (data[2] & 0b11000000) >> 6;
-        this.startDate            = new ReverseDate(ByteUtils.extractInt(data, 2, 2, false) & 0x3fff);
+        this.startDate            = ReverseDate.fromDays(ByteUtils.extractInt(data, 2, 2, false) & 0x3fff);
         this.duration             = data[4] & 0xff;
-        this.network              = data[5] & 0xff;
+        this.network              = NetworkCode.decode(data[5] & 0xff);
         this.provider             = Provider.decode(data[6] & 0xff);
 
         this.modality             = Modality.decode((data[7] & 0b10000000) >> 7);
@@ -116,7 +115,7 @@ public class Contract extends File<Contract> {
         this.restrictCode         = data[9] & 0xff;
         this.periodJourney        = data[10] & 0xff;
         this.location             = ByteUtils.extractLong(data, 11, 5, false);
-        this.saleDate             = new CompactDate(ByteUtils.extractInt(data, 16, 2, false));
+        this.saleDate             = CompactDate.fromDays(ByteUtils.extractInt(data, 16, 2, false));
         this.saleSam              = ByteUtils.extractInt(data, 18, 4, false);
         this.saleCounter          = ByteUtils.extractInt(data, 22, 3, false);
         this.authKvc              = data[25] & 0xff;
@@ -126,7 +125,39 @@ public class Contract extends File<Contract> {
     }
 
     public LocalDate getExpirationDate(int daysOffset) {
-        return startDate.getDate().plusMonths(duration).minusDays(daysOffset);
+        int _duration = duration & 0xFF;
+        PeriodType period = PeriodType.decode((_duration >> 6) & 0b11);
+        int trips = _duration & 0b00111111;
+
+        switch (period) {
+            case MONTH:
+                return startDate.getDate().plusMonths(trips).minusDays(daysOffset);
+            case WEEK:
+                return startDate.getDate().plusWeeks(trips).minusDays(daysOffset);
+            case DAY:
+                return startDate.getDate().plusDays(trips).minusDays(daysOffset);
+        }
+
+        throw new IllegalArgumentException("Invalid duration format this most be 0bnnpppppp, n: period, p: trips");
     }
+
+//    public static Contract buildContract(
+//            int id,
+//            int version,
+//            int network,
+//            Provider provider,
+//            Modality modality,
+//            ) {
+//        Contract contract = new Contract(id);
+//
+//        // Auto data
+//        contract.setStartDate(ReverseDate.now());
+//        contract.setDuration(60);
+//
+//        contract.setVersion(version);
+//
+//
+//        return contract;
+//    }
 
 }

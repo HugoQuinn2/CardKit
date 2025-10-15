@@ -116,6 +116,14 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
 
     }
 
+    @Override
+    public boolean isCardOnReader() {
+        if (cardReader == null)
+            return false;
+
+        return cardReader.isCardPresent();
+    }
+
     /**
      * Updates the active Calypso card session by selecting and retrieving
      * the currently inserted card.

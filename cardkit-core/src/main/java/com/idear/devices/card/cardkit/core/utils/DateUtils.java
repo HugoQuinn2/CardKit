@@ -1,9 +1,6 @@
 package com.idear.devices.card.cardkit.core.utils;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 
@@ -70,5 +67,11 @@ public abstract class DateUtils {
     public static int fromRealTime(LocalDateTime dateTime) {
         long secondsSince1997 = dateTime.toEpochSecond(ZONE_OFFSET) - SECONDS_UNTIL_1997_01_01;
         return (int) secondsSince1997;
+    }
+
+    public static String toLocalZone(LocalDateTime localDateTime) {
+        ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.systemDefault());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        return zonedDateTime.format(formatter);
     }
 }

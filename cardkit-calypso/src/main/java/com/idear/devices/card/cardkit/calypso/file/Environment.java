@@ -62,9 +62,9 @@ public class Environment extends File<Environment> {
         this.issuer = data[3] & 0xFF;
         this.application = ByteUtils.extractInt(data, 4, 4, false);
 
-        this.issuingDate = new CompactDate(ByteUtils.extractInt(data, 8, 2, false));
-        this.endDate = new CompactDate(ByteUtils.extractInt(data, 10, 2, false));
-        this.holderBirthDate = new LongDate(ByteUtils.extractInt(data, 12, 4, false));
+        this.issuingDate = CompactDate.fromDays(ByteUtils.extractInt(data, 8, 2, false));
+        this.endDate = CompactDate.fromDays(ByteUtils.extractInt(data, 10, 2, false));
+        this.holderBirthDate = LongDate.fromValue(ByteUtils.extractInt(data, 12, 4, false));
 
         this.holderCompany = data[16] & 0xFF;
         this.holderId = ByteUtils.extractInt(data, 17, 4, false);
@@ -75,12 +75,12 @@ public class Environment extends File<Environment> {
                 ByteUtils.mostSignificantNibble(data[26])
         );
 
-        this.prof1Date = new CompactDate(ByteUtils.extractInt(
+        this.prof1Date = CompactDate.fromDays(ByteUtils.extractInt(
                 ByteUtils.extractBytes(data, 21 * 8 + 4, 2), 0, 2, false)) ;
 
-        this.prof2Date = new CompactDate(ByteUtils.extractInt(data, 24, 2, false)) ;
+        this.prof2Date = CompactDate.fromDays(ByteUtils.extractInt(data, 24, 2, false)) ;
 
-        this.prof3Date = new CompactDate(ByteUtils.extractInt(
+        this.prof3Date = CompactDate.fromDays(ByteUtils.extractInt(
                 ByteUtils.extractBytes(data, 26 * 8 + 4, 2), 0, 2, false));
 
         this.holderPadding = ByteUtils.leastSignificantNibble(data[28]);

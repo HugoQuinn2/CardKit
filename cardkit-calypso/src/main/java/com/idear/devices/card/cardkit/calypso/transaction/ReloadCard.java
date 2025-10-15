@@ -39,6 +39,7 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Contract contract;
+    private final int passenger;
     private final int locationId;
     private final int amount;
 
@@ -55,11 +56,12 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      * @param contract        The contract to renew if applicable.
      * @param locationId      The location ID performing the operation.
      */
-    public ReloadCard(CalypsoCardCDMX calypsoCardCDMX, int amount, Contract contract, int locationId) {
+    public ReloadCard(CalypsoCardCDMX calypsoCardCDMX, int amount, Contract contract, int passenger, int locationId) {
         super("reload and renew card");
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.amount = amount;
         this.contract = contract;
+        this.passenger = passenger;
         this.locationId = locationId;
     }
 
@@ -71,18 +73,6 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-        reportProgress(0, "Starting reload transaction");
-
-        // Step 1: Read card
-        TransactionResult<CalypsoCardCDMX> simpleRead = reader.execute(new SimpleReadCard());
-        if (!simpleRead.isOk()) throw new ReaderException("No card on reader");
-
-        if (!simpleRead.getData().getSerial().equals(calypsoCardCDMX.getSerial()))
-            throw new CardException("Invalid card: expected %s, got %s",
-                    calypsoCardCDMX.getSerial(),
-                    simpleRead.getData().getSerial());
-
-        reportProgress(10, "Card verified");
 
         // Step 2: Check contract validity
         if (!contract.getStatus().equals(ContractStatus.CONTRACT_PARTLY_USED))
@@ -91,37 +81,38 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
         if (calypsoCardCDMX.getBalance() + amount > maxBalance)
             throw new CardException("Final balance exceeds maximum (%s): %s", maxBalance, calypsoCardCDMX.getBalance() + amount);
 
-        reportProgress(20, "Contract validated and balance checked");
-
         // Step 3: Renew contract
         if (contract.isExpired(contractDaysOffset))
             throw new CardException("Contract expired");
 
 
         // Step 4: Perform reload operation
+//        reader.getCardTransactionManager()
+//                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+//                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
+//                .processCommands(ChannelControl.KEEP_OPEN);
+
         reader.getCardTransactionManager()
                 .prepareOpenSecureSession(WriteAccessLevel.LOAD)
                 .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
-                .processCommands(ChannelControl.KEEP_OPEN);
-
-        reportProgress(50, "Secure session started");
-
-        reader.getCardTransactionManager()
                 .prepareSvReload(
                         amount,
-                        CompactDate.toBytes(CompactDate.now().getCode()),
-                        CompactTime.toBytes(CompactTime.now().getCode()),
-                        ByteUtils.extractBytes(0, 2)
-                );
-
-        reader.execute(new SaveEvent(transactionType, locationId, amount));
-
-        reader.getCardTransactionManager()
+                        CompactDate.now().toBytes(),
+                        CompactTime.now().toBytes(),
+                        ByteUtils.extractBytes(0, 2))
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.CLOSE_AFTER);
 
-
-        reportProgress(100, "Reload successful");
+//        reader.execute(
+//                new SaveEvent(
+//                        transactionType,
+//                        calypsoCardCDMX.getEnvironment(),
+//                        contract,
+//                        passenger,
+//                        locationId,
+//                        amount,
+//                        calypsoCardCDMX.getEvents().getNextTransactionNumber())
+//        );
 
         return TransactionResult.<Boolean>builder()
                 .transactionStatus(TransactionStatus.OK)

@@ -34,8 +34,8 @@ public class DebitLog extends File<DebitLog> {
         BitUtil bit = new BitUtil(CDMX.RECORD_SIZE * 8);
 
         bit.setNextInteger(amount, 16);
-        bit.setNextInteger(date.getCode(), 16);
-        bit.setNextInteger(time.getCode(), 16);
+        bit.setNextInteger(date.getValue(), 16);
+        bit.setNextInteger(time.getValue(), 16);
         bit.setNextInteger(kvc, 8);
         bit.setNextInteger(HexUtil.toInt(samId), 32);
         bit.setNextInteger(samNum, 24);
@@ -49,8 +49,8 @@ public class DebitLog extends File<DebitLog> {
     public DebitLog parse(byte[] data) {
 
         this.amount = ByteUtils.extractInt(data, 0, 4, false);
-        this.date = new CompactDate(ByteUtils.extractInt(data, 4, 2, false));
-        this.time = new CompactTime(ByteUtils.extractInt(data, 6, 2, false));
+        this.date = CompactDate.fromDays(ByteUtils.extractInt(data, 4, 2, false));
+        this.time = CompactTime.fromMinutes(ByteUtils.extractInt(data, 6, 2, false));
         this.kvc = data[8] & 0xff;
         this.samId = HexUtil.toHex(ByteUtils.extractInt(data, 9, 4, false));
         this.balance = ByteUtils.extractInt(data, 13, 4, false);
@@ -62,8 +62,8 @@ public class DebitLog extends File<DebitLog> {
 
     public DebitLog parse(SvDebitLogRecord data) {
         amount = data.getAmount();
-        date = new CompactDate(ByteUtils.extractInt(data.getDebitDate(), 0, 2, false));
-        time = new CompactTime(ByteUtils.extractInt(data.getDebitTime(), 0, 2, false));
+        date = CompactDate.fromDays(ByteUtils.extractInt(data.getDebitDate(), 0, 2, false));
+        time = CompactTime.fromMinutes(ByteUtils.extractInt(data.getDebitTime(), 0, 2, false));
         kvc = data.getKvc() & 0xff;
         samId = HexUtil.toHex(ByteUtils.extractInt(data.getSamId(), 0, 4, false));
         samNum = data.getSamTNum();

@@ -1,0 +1,64 @@
+sequenceDiagram
+    participant User
+    participant DebitCard
+    participant ReaderPCSC
+    participant Contract
+
+    User->>DebitCard: execute(reader)
+
+%% Passback verification
+    DebitCard->>DebitCard: validatePassback(now, lastDebitDateTime)
+    alt Passback invalid
+        DebitCard-->>User: abort "invalid pass back of X minutes for profile P, wait until Y"
+    end
+
+%% Resolve equipment
+    DebitCard->>DebitCard: resolveEquipment(locationId)
+
+%% Profile allowed on equipment
+    DebitCard->>DebitCard: validateProfileOnEquipment(equipment)
+    alt Profile not allowed
+        DebitCard-->>User: abort "profile not allowed on this device"
+    end
+
+%% Contract status
+    DebitCard->>Contract: checkAcceptedStatus()
+    alt Contract not accepted
+        DebitCard-->>User: abort "card without valid contract"
+    end
+
+%% Contract expiration
+    DebitCard->>Contract: checkExpiration(contractDaysOffset)
+    alt Contract expired
+        DebitCard-->>User: abort "card expired on DATE"
+    end
+
+%% Monomodal verification
+    DebitCard->>Contract: checkMonomodalDeviceProvider(deviceProvider)
+    alt Monomodal failed
+        DebitCard-->>User: abort "monomodal verification failed"
+    end
+
+%% Unsupported tariff
+    DebitCard->>Contract: checkUnsupportedTariff()
+    alt Tariff unsupported
+        DebitCard-->>User: abort "unsupported tariff on this transaction"
+    end
+
+%% Resolve debit amount
+    DebitCard->>DebitCard: resolveDebitAmount()
+    alt Amount exceeds max
+        DebitCard-->>User: abort "amount cannot be greater than MAX_POSSIBLE_AMOUNT"
+    end
+
+%% Perform debit
+    DebitCard->>ReaderPCSC: performDebit(finalAmount)
+
+%% Determine transaction type
+    DebitCard->>DebitCard: determineTransactionType(finalAmount, equipment)
+
+%% Save event
+    DebitCard->>ReaderPCSC: recordEvent(transactionType, finalAmount)
+
+%% Return result
+    DebitCard-->>User: return TransactionResult<Boolean>
