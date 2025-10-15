@@ -3,12 +3,20 @@ package com.idear.devices.card.cardkit.calypso.transaction;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.exception.CardException;
+import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 /**
  * Represents a transaction that cancels the balance of a Calypso card.
@@ -24,11 +32,11 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
  * Otherwise, it will contain {@code false} and a status of {@link TransactionStatus#ERROR}.
  * </p>
  *
+ * @author Victor Hugo Gaspar Quinn
+ * @version 1.0.0
  * @see CalypsoCardCDMX
  * @see ReloadCard
  * @see Transaction
- * @author Victor Hugo Gaspar Quinn
- * @version 1.0.0
  */
 public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
 
@@ -41,8 +49,8 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
      * Constructs a new {@code BalanceCancellation} transaction.
      *
      * @param calypsoCardCDMX the Calypso card instance whose balance will be canceled
-     * @param locationId the ID of the location where the transaction is performed
-     * @param contract the contract associated with the transaction
+     * @param locationId      the ID of the location where the transaction is performed
+     * @param contract        the contract associated with the transaction
      * @param transactionType the type of transaction being executed
      */
     public BalanceCancellation(
@@ -50,11 +58,33 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
             int locationId,
             Contract contract,
             TransactionType transactionType) {
-        super("balance cancellation");
+        super("balance_cancellation");
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.locationId = locationId;
         this.contract = contract;
         this.transactionType = transactionType;
+    }
+
+    /**
+     * Constructs a new {@code BalanceCancellation} transaction with the first {@link Contract} accepted founded.
+     *
+     * @param calypsoCardCDMX the Calypso card instance whose balance will be canceled
+     * @param locationId      the ID of the location where the transaction is performed
+     * @param transactionType the type of transaction being executed
+     */
+    public BalanceCancellation(
+            CalypsoCardCDMX calypsoCardCDMX,
+            int locationId,
+            TransactionType transactionType) {
+        super("balance_cancellation");
+        this.calypsoCardCDMX = calypsoCardCDMX;
+        this.locationId = locationId;
+        this.transactionType = transactionType;
+
+        this.contract = calypsoCardCDMX.getContracts()
+                .findFirst(c -> c.getStatus().isAccepted())
+                .orElseThrow(() -> new CardException(
+                        "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
     }
 
     /**
@@ -72,33 +102,38 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-        if (!reader.execute(new SimpleReadCard()).isOk())
-            throw new CardException("no card on reader");
+        if (!reader.isCardOnReader())
+            throw new ReaderException("no card on reader");
 
-        int negativeAmount = calypsoCardCDMX.getBalance() * -1;
-        TransactionResult<Boolean> canceledBalance = reader.execute(
-                new ReloadCard(
-                        calypsoCardCDMX,
+        int negativeAmount = calypsoCardCDMX.getBalance() * (-1);
+
+        reader.getCardTransactionManager()
+                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
+                .prepareSvReload(
                         negativeAmount,
-                        contract,
-                        locationId)
-                        .transactionType(transactionType)
-                        .contractDaysOffset(1800));
+                        CompactDate.now().toBytes(),
+                        CompactTime.now().toBytes(),
+                        ByteUtils.extractBytes(0, 2))
+                .prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
 
-        if (canceledBalance.isOk())
-            return TransactionResult.
-                    <Boolean>builder()
-                    .transactionStatus(TransactionStatus.OK)
-                    .data(true)
-                    .message(transactionType + ": card '" + calypsoCardCDMX.getSerial() + "' canceled")
-                    .build();
-
+        reader.execute(new SaveEvent(
+                transactionType,
+                calypsoCardCDMX.getEnvironment(),
+                contract,
+                0,
+                locationId,
+                negativeAmount,
+                calypsoCardCDMX.getEvents().getNextTransactionNumber())
+        );
 
         return TransactionResult.
                 <Boolean>builder()
-                .transactionStatus(TransactionStatus.ERROR)
-                .data(false)
-                .message("Error canceling card balance: " + canceledBalance.getMessage())
+                .transactionStatus(TransactionStatus.OK)
+                .data(true)
+                .message("balance card '" + calypsoCardCDMX.getSerial() + "' canceled")
                 .build();
+
     }
 }

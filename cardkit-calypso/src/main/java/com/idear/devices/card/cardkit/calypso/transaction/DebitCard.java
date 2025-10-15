@@ -304,7 +304,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
                         CompactDate.now().toBytes(),
                         CompactTime.now().toBytes())
                 .prepareCloseSecureSession()
-                .processCommands(ChannelControl.CLOSE_AFTER);
+                .processCommands(ChannelControl.KEEP_OPEN);
     }
 
     public DebitCard contractDaysOffset(int contractDaysOffset) {

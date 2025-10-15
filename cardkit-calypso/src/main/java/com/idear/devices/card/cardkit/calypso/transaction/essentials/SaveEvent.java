@@ -113,7 +113,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-        if (!reader.getCardReader().isCardPresent())
+        if (!reader.isCardOnReader())
             throw new ReaderException("no card on reader");
 
         // Build the event data
