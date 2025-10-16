@@ -97,9 +97,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
         // Check if the Dedicated File (DF) is invalid
-        if (calypsoCard.isDfInvalidated()) {
-            throw new CardException("Invalid DF status on card");
-        }
+        calypsoCardCDMX.setEnabled(!calypsoCard.isDfInvalidated());
 
         // Extract and set the card serial number
         calypsoCardCDMX.setSerial(HexUtil.toHex(calypsoCard.getApplicationSerialNumber()));

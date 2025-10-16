@@ -1,12 +1,9 @@
 package readers;
 
-import com.idear.devices.card.cardkit.calypso.file.Contract;
+import com.idear.devices.card.cardkit.calypso.file.Event;
 import com.idear.devices.card.cardkit.calypso.transaction.*;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardData;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
-import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.datamodel.location.StationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
@@ -18,10 +15,8 @@ import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.reader.CardReaderEvent;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ACS {
 
@@ -66,38 +61,71 @@ public class ACS {
         safeWait(-1);
     }
 
+    public static boolean isLastDebitSamOnWhiteList(CalypsoCardCDMX calypsoCardCDMX) {
+        return true;
+    }
+
+    public static boolean isLastLoadSamOnWhiteList(CalypsoCardCDMX calypsoCardCDMX) {
+        return true;
+    }
+
+    public static void reportEventToCentral(Event event) {
+        System.out.println(event.toJson());
+    }
+
     @Test
     public void debit() throws Exception {
-        StationCode LOCATION_CODE = new StationCode(1, 2, Equipment.ANY_VALIDATOR, 1);
-        int DEBIT_AMOUNT = 10_000;
-        Provider DEVICE_PROVIDER = Provider.CABLEBUS;
+        // Basic debit device params
+        StationCode locationCode = new StationCode("030A01");
+        Provider deviceProvider = Provider.CABLEBUS;
+        int amount = 10_000;
 
-        Executor executor = Executors.newSingleThreadExecutor();
-
+        // Start reader with AID calypso card and sam lock secret
         ReaderPCSC reader = new ReaderPCSC(BEA_ACS, new CalypsoSam(SAM_ACS, lockSecret));
         reader.init();
         reader.initCardObserver(aidCDMX);
 
+        // Add listener to cards events, this most be reported to central system
+        reader.getCardEventListenerList().add(ACS::reportEventToCentral);
+
+        // Add listener to readers events
         reader.addListeners(event -> {
+            // Just work with CARD_MATCHED, this matched with que AID previously declared
             if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
                 return;
 
-            // Read card data
-            TransactionResult<CalypsoCardCDMX> calypsoCardCDMXTransactionResult = reader.execute(new ReadAllCard()).print();
-            if (!calypsoCardCDMXTransactionResult.isOk())
-                throw new ReaderException(calypsoCardCDMXTransactionResult.getMessage());
+            // Read all card data and
+            CalypsoCardCDMX calypsoCardCDMX = reader.execute(new ReadAllCard()).getData();
+            if (calypsoCardCDMX == null)
+                return;
+
+            // If the last load or debit sam is out, cancel the card balance
+            if (!isLastLoadSamOnWhiteList(calypsoCardCDMX)) {
+                reader.execute(
+                        new BalanceCancellation(
+                                calypsoCardCDMX,
+                                locationCode.getCode(),
+                                TransactionType.BALANCE_CANCELLATION_LOAD_SAM_NOT_WHITELISTED
+                        ));
+                return;
+            } else if (!isLastDebitSamOnWhiteList(calypsoCardCDMX)){
+                reader.execute(
+                        new BalanceCancellation(
+                                calypsoCardCDMX,
+                                locationCode.getCode(),
+                                TransactionType.BALANCE_CANCELLATION_DEBIT_SAM_NOT_WHITELISTED
+                        ));
+                return;
+            }
 
             // Make debit
             TransactionResult<Boolean> debit = reader.execute(
                     new DebitCard(
-                            calypsoCardCDMXTransactionResult.getData(),
-                            DEVICE_PROVIDER,
-                            LOCATION_CODE,
-                            DEBIT_AMOUNT)
+                            calypsoCardCDMX,
+                            deviceProvider,
+                            locationCode,
+                            amount)
             );
-
-            // Parse debit result on executor
-            executor.execute(() -> System.out.println(debit.getMessage()));
 
             // Save debit if was correct
         });
@@ -143,6 +171,38 @@ public class ACS {
             executor.execute(() -> System.out.println(debit.getMessage()));
 
             // Save debit if was correct
+        });
+
+        safeWait(-1);
+    }
+
+    @Test
+    public void invalidate() throws Exception {
+        StationCode LOCATION_CODE = new StationCode(1, 2, Equipment.ANY_VALIDATOR, 1);
+        int DEBIT_AMOUNT = 10_000;
+        Provider DEVICE_PROVIDER = Provider.CABLEBUS;
+
+        Executor executor = Executors.newSingleThreadExecutor();
+
+        ReaderPCSC reader = new ReaderPCSC(BEA_ACS, new CalypsoSam(SAM_ACS, lockSecret));
+        reader.init();
+        reader.initCardObserver(aidCDMX);
+
+        reader.addListeners(event -> {
+            if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
+                return;
+
+            // Read card data
+            TransactionResult<CalypsoCardCDMX> calypsoCardCDMXTransactionResult = reader.execute(new ReadAllCard());
+            if (!calypsoCardCDMXTransactionResult.isOk())
+                throw new ReaderException(calypsoCardCDMXTransactionResult.getMessage());
+
+            reader.execute(new InvalidateCard(
+                    calypsoCardCDMXTransactionResult.getData(),
+                    LOCATION_CODE.getCode()
+            )).print();
+
+            reader.execute(new ReadAllCard()).print();
         });
 
         safeWait(-1);

@@ -15,4 +15,6 @@ public class CalypsoCardCDMX extends Card {
     private Contracts contracts = new Contracts();
     private DebitLog debitLog;
     private LoadLog loadLog;
+
+    private boolean enabled;
 }
