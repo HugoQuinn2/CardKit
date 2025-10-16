@@ -29,7 +29,7 @@ public class ACS {
     public void  editCard() throws Exception {
         ReaderPCSC reader = new ReaderPCSC(BEA_ACS, new CalypsoSam(SAM_ACS, lockSecret));
         reader.init();
-        reader.initCardObserver(aidCDMX);
+        reader.initCardObserver(CDMX.AID);
 
         reader.addListeners(event -> {
             if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
