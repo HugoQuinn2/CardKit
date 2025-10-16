@@ -40,6 +40,8 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  */
 public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
 
+    public static final String NAME = "BALANCE_CANCELLATION";
+
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final int locationId;
     private final Contract contract;
@@ -58,7 +60,7 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
             int locationId,
             Contract contract,
             TransactionType transactionType) {
-        super("balance_cancellation");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.locationId = locationId;
         this.contract = contract;
@@ -76,7 +78,7 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
             CalypsoCardCDMX calypsoCardCDMX,
             int locationId,
             TransactionType transactionType) {
-        super("balance_cancellation");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.locationId = locationId;
         this.transactionType = transactionType;

@@ -37,6 +37,8 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 @Getter
 public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
 
+    public static final String NAME = "RELOAD_CARD";
+
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Contract contract;
     private final int passenger;
@@ -57,7 +59,7 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      * @param locationId      The location ID performing the operation.
      */
     public ReloadCard(CalypsoCardCDMX calypsoCardCDMX, int amount, Contract contract, int passenger, int locationId) {
-        super("reload and renew card");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.amount = amount;
         this.contract = contract;

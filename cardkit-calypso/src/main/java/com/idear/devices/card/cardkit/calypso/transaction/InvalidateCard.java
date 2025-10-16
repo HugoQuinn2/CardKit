@@ -13,20 +13,22 @@ import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
 public class InvalidateCard extends Transaction<Boolean, ReaderPCSC> {
 
+    public static final String NAME = "INVALIDATE_CARD";
+
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Contract contract;
     private final int locationId;
     private TransactionType transactionType = TransactionType.BLACKLISTED_CARD;
 
     public InvalidateCard(CalypsoCardCDMX calypsoCardCDMX, Contract contract, int locationId) {
-        super("invalidate_card");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.contract = contract;
         this.locationId = locationId;
     }
 
     public InvalidateCard(CalypsoCardCDMX calypsoCardCDMX, int locationId) {
-        super("invalidate_card");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
 
         this.contract = calypsoCardCDMX.getContracts()

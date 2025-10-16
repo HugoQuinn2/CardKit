@@ -55,6 +55,8 @@ import java.util.SortedMap;
 @Slf4j
 public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
+    public static final String NAME = "READ_ALL_CARD";
+
     private CalypsoCardCDMX calypsoCardCDMX;
     private TransactionResult<byte[]> readFile;
     private TransactionResult<SortedMap<Integer, byte[]>> readFiles;
@@ -63,7 +65,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
      * Creates a new {@code ReadAllCard} transaction with the default name "read all card".
      */
     public ReadAllCard() {
-        super("read all card");
+        super(NAME);
     }
 
     /**

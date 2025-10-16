@@ -48,6 +48,8 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  */
 public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
 
+    public static final String NAME = "RENEWED_CARD";
+
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final int locationId;
     private final Contract contract;
@@ -64,7 +66,7 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
      * @param daysOffset      the number of days before expiration to trigger a renewal
      */
     public RenewedCard(CalypsoCardCDMX calypsoCardCDMX, int locationId, Contract contract, int daysOffset) {
-        super("renewed contract");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.locationId = locationId;
         this.contract = contract;

@@ -11,6 +11,7 @@ import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.datamodel.location.StationCode;
 import com.idear.devices.card.cardkit.core.datamodel.location.TransportLocation;
 import com.idear.devices.card.cardkit.core.exception.CardException;
+import com.idear.devices.card.cardkit.core.io.transaction.ProgressUpdate;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
@@ -45,6 +46,7 @@ import java.time.LocalDateTime;
 public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
 
     private static final int MAX_POSSIBLE_AMOUNT = 32767;
+    public static final String NAME = "DEBIT_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Provider deviceProvider;
@@ -72,7 +74,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
             int amount,
             int passenger,
             Contract contract) {
-        super("debit card");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.deviceProvider = deviceProvider;
         this.contract = contract;
@@ -96,7 +98,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
             LocationCode locationId,
             int amount,
             int passenger) {
-        super("debit card");
+        super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.deviceProvider = deviceProvider;
         this.passenger = passenger;
