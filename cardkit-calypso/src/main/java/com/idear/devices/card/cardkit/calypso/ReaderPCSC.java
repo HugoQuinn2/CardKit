@@ -109,6 +109,7 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     public void init() throws Exception {
         cardReader = Assert.isNull(plugin.getReader(readerName), "Reader '%s' not founded.", readerName);
         calypsoSam.init();
+        log.info("New PC/SC reader started, sam: {} #{} @{}", calypsoSam.getSamProviderCode(), calypsoSam.getSerial(), calypsoSam.getSamType() );
     }
 
     @Override
@@ -191,6 +192,7 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
 
         ObservableCardReader observableCardReader = (ObservableCardReader) cardReader;
         observableCardReader.startCardDetection(ObservableCardReader.DetectionMode.REPEATING);
+        log.debug("Card observer started #{}", aid);
     }
 
     /**

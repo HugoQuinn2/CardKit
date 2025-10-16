@@ -76,7 +76,7 @@ public class ACS {
     @Test
     public void debit() throws Exception {
         // Basic debit device params
-        StationCode locationCode = new StationCode("030A01");
+        StationCode locationCode = new StationCode(1111111);
         Provider deviceProvider = Provider.CABLEBUS;
         int amount = 10_000;
 

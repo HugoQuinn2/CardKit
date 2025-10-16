@@ -23,6 +23,7 @@ public enum Provider implements IDataModel {
     TIMT(0x5A),
     SEMOVI(0x64),
     ECOBICI(0x96),
+    MEXIBUS(0xCC),
     RFU(-1);
 
     private final int value;

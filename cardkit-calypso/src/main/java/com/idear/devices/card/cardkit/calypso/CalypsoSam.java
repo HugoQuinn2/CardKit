@@ -1,12 +1,13 @@
 package com.idear.devices.card.cardkit.calypso;
 
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.SamType;
 import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.sam.Sam;
 import com.idear.devices.card.cardkit.core.utils.Assert;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.ToString;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamExtensionService;
@@ -56,7 +57,7 @@ public class CalypsoSam extends Sam {
     private int samNetworkReference;
     private int samVersion;
     private int samNetworkCode;
-    private int samProviderCode;
+    private Provider samProviderCode;
 
     private void parse(byte [] data) {
         if (data == null)
@@ -76,7 +77,7 @@ public class CalypsoSam extends Sam {
         setSamNetworkReference(data[0x0C] & 0xff);
         setSamVersion(data[0x0D] & 0xff);
         setSamNetworkCode(data[0x0E] & 0xff);
-        setSamProviderCode(data[0x0F] & 0xff);
+        setSamProviderCode(Provider.decode(data[0x0F] & 0xff));
     }
 
     @Override
@@ -91,40 +92,6 @@ public class CalypsoSam extends Sam {
         samReader = Assert.isNull(ReaderPCSC.plugin.getReader(samName), "sam reader '%s' not founded.");
         legacySam = initCalypsoSam(samReader, lockSecret);
         serial = HexUtil.toHex(legacySam.getSerialNumber());
-    }
-
-    @Getter
-    public enum SamType {
-        SPP(0x0A),
-        SP(0x10),
-        SL(0x30),
-        DV(0x80),
-        CPP(0x40),
-        CPB(0x51),
-        CPS(0x52),
-        CPT(0x53),
-        CLB(0x61),
-        CLS(0x62),
-        CLT(0x63),
-        CVB(0x71),
-        CVS(0x72),
-        CVT(0x73),
-        RFU(-1);
-
-        private final int samType;
-
-        SamType(int samType) {
-            this.samType = samType;
-        }
-
-        public static SamType decode(int samType) {
-            for (SamType v : values()) {
-                if (v.samType == samType) {
-                    return v;
-                }
-            }
-            return RFU;
-        }
     }
 
     public LegacySam initCalypsoSam(

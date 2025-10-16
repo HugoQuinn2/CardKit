@@ -16,6 +16,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.DateUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
@@ -40,6 +41,7 @@ import java.time.LocalDateTime;
  * @version 1.0.0
  */
 @Getter
+@Slf4j
 public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
 
     private static final int MAX_POSSIBLE_AMOUNT = 32767;
@@ -125,6 +127,11 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
 
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+        log.info("Debiting card {}.", calypsoCardCDMX.getSerial());
+
+        if (!calypsoCardCDMX.isEnabled())
+            throw new CardException("disabled card");
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime lastDebitDateTime = LocalDateTime.of(
                 calypsoCardCDMX.getDebitLog().getDate().getDate(),
