@@ -31,13 +31,13 @@ public abstract class Reader<E> {
         try {
             if (!this.isCardOnReader())
                 throw new ReaderException("no card on reader");
-
+            log.debug("Executing transaction {}", transaction.getName().toUpperCase());
             TransactionResult<T> transactionResult = transaction.execute((R) this);
             transactionResult.setTime(System.currentTimeMillis() - time);
             transactionResult.setTransactionName(transaction.getName());
-            log.debug("Executing transaction {}", transaction.getName().toUpperCase());
             return transactionResult;
         } catch (CardException | SamException | ReaderException aborted) {
+            log.warn("{}: {}", transaction.getName().toUpperCase(), aborted.getMessage());
             return TransactionResult.<T>builder()
                     .transactionStatus(TransactionStatus.ABORTED)
                     .transactionName(transaction.getName())
