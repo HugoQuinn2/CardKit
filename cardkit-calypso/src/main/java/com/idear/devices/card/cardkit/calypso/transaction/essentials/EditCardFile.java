@@ -63,21 +63,14 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-//        if (!reader.execute(new SimpleReadCard()).isOk())
-//            throw new CardException("no card on reader");
 
         reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+                .prepareOpenSecureSession(writeAccessLevel)
                 .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
-                .processCommands(ChannelControl.KEEP_OPEN);
-
-        // edit file card
-        reader.getCardTransactionManager()
                 .prepareUpdateRecord(
                         file.getFileId(),
                         recordNumber,
-                        file.unparse()
-                )
+                        file.unparse())
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);
 

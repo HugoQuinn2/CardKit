@@ -3,8 +3,10 @@ package com.idear.devices.card.cardkit.calypso.transaction;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
+import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.ContractStatus;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.exception.CardException;
@@ -97,33 +99,20 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-        if (!reader.execute(new SimpleReadCard()).isOk())
-            throw new CardException("no card on reader");
+        if (!calypsoCardCDMX.isEnabled())
+            throw new CardException("card invalidated");
 
         if (!contract.isExpired(daysOffset))
-            return TransactionResult
-                    .<Boolean>builder()
-                    .transactionStatus(TransactionStatus.OK)
-                    .message("card contract does not require renewal expiration date: " + contract.getExpirationDate(daysOffset))
-                    .data(true)
-                    .build();
+            throw new CardException("card contract does not require renewal expiration date: " + contract.getExpirationDate(daysOffset));
 
         // Renew duration and start date
         contract.setDuration(duration);
         contract.setStartDate(ReverseDate.now());
+        contract.setStatus(ContractStatus.CONTRACT_PARTLY_USED);
 
-        // Save event on card and renew contract
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
-                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
-                .processCommands(ChannelControl.KEEP_OPEN);
-
-        reader.getCardTransactionManager()
-                .prepareUpdateRecord(
-                        contract.getFileId(),
-                        1,
-                        contract.unparse()
-                );
+       reader.execute(
+                new EditCardFile(contract, 1, WriteAccessLevel.DEBIT))
+                .throwMessageOnError(CardException.class);
 
         reader.execute(
                 new SaveEvent(
@@ -133,12 +122,8 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
                         0,
                         locationId,
                         0,
-                        calypsoCardCDMX.getEvents().getNextTransactionNumber())
-        );
-
-        reader.getCardTransactionManager()
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.CLOSE_AFTER);
+                        calypsoCardCDMX.getEvents().getNextTransactionNumber()
+                )).throwMessageOnError(CardException.class);
 
         return TransactionResult
                 .<Boolean>builder()

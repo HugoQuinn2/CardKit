@@ -75,6 +75,8 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+        if (!calypsoCardCDMX.isEnabled())
+            throw new CardException("card invalidated");
 
         // Step 2: Check contract validity
         if (!contract.getStatus().equals(ContractStatus.CONTRACT_PARTLY_USED))

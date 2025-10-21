@@ -1,6 +1,6 @@
 package com.idear.devices.card.cardkit.core.exception;
 
-public class ReaderException extends RuntimeException {
+public class ReaderException extends CardKitException {
     public ReaderException(String message) {
         super(message);
     }

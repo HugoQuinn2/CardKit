@@ -95,9 +95,18 @@ public class ACS {
                 return;
 
             // Read all card data and
-            CalypsoCardCDMX calypsoCardCDMX = reader.execute(new ReadAllCard()).getData();
-            if (calypsoCardCDMX == null)
-                return;
+            CalypsoCardCDMX calypsoCardCDMX = reader
+                    .factory()
+                    .readAllCardData()
+                    .throwMessageOnError(ReaderException.class)
+                    .getData();
+
+            // if is on black list
+            reader.factory()
+                    .invalidateCard(
+                            calypsoCardCDMX,
+                            locationCode.getCode())
+                    .throwMessage(CardException.class);
 
             // If the last load or debit sam is out, cancel the card balance
             if (!isLastLoadSamOnWhiteList(calypsoCardCDMX)) {

@@ -1,11 +1,13 @@
 package com.idear.devices.card.cardkit.calypso;
 
+import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.file.Event;
+import com.idear.devices.card.cardkit.calypso.transaction.InvalidateCard;
+import com.idear.devices.card.cardkit.calypso.transaction.ReadAllCard;
 import com.idear.devices.card.cardkit.core.io.reader.Reader;
+import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.utils.Assert;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.core.service.Plugin;
@@ -236,6 +238,30 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     public void fireCardEvent(Event event) {
         for (EventListener eventListener : cardEventListenerList)
             eventListener.onEvent(event);
+    }
+
+    public Factory factory() {
+        return new Factory(this);
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public static class Factory {
+
+        private final ReaderPCSC readerPCSC;
+
+        public TransactionResult<CalypsoCardCDMX> readAllCardData() {
+            return readerPCSC.execute(new ReadAllCard());
+        }
+
+        public TransactionResult<Boolean> invalidateCard(CalypsoCardCDMX calypsoCardCDMX, int locationCode) {
+            return readerPCSC.execute(new InvalidateCard(calypsoCardCDMX, locationCode));
+        }
+
+        public TransactionResult<Boolean> invalidateCard(CalypsoCardCDMX calypsoCardCDMX, Contract contract, int locationCode) {
+            return readerPCSC.execute(new InvalidateCard(calypsoCardCDMX, contract, locationCode));
+        }
+
     }
 
 }

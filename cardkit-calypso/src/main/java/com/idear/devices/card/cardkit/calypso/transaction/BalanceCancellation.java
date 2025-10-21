@@ -104,8 +104,9 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
-        if (!reader.isCardOnReader())
-            throw new ReaderException("no card on reader");
+
+        if (!calypsoCardCDMX.isEnabled())
+            throw new CardException("card invalidated");
 
         int negativeAmount = calypsoCardCDMX.getBalance() * (-1);
 

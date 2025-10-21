@@ -1,6 +1,7 @@
 package com.idear.devices.card.cardkit.core.io.reader;
 
 import com.idear.devices.card.cardkit.core.exception.CardException;
+import com.idear.devices.card.cardkit.core.exception.CardKitException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -31,12 +32,13 @@ public abstract class Reader<E> {
         try {
             if (!this.isCardOnReader())
                 throw new ReaderException("no card on reader");
+
             log.debug("Executing transaction {}", transaction.getName());
             TransactionResult<T> transactionResult = transaction.execute((R) this);
             transactionResult.setTime(System.currentTimeMillis() - time);
             transactionResult.setTransactionName(transaction.getName());
             return transactionResult;
-        } catch (CardException | SamException | ReaderException aborted) {
+        } catch (CardKitException aborted) {
             log.warn("{}: {}", transaction.getName(), aborted.getMessage());
             return TransactionResult.<T>builder()
                     .transactionStatus(TransactionStatus.ABORTED)
