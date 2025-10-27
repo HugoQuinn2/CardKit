@@ -2,6 +2,7 @@ package com.idear.devices.card.cardkit.calypso.file;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
+import com.idear.devices.card.cardkit.core.io.card.cardProperty.CardProperty;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
@@ -14,9 +15,9 @@ import org.eclipse.keyple.core.util.HexUtil;
 @Data
 public class Environment extends File<Environment> {
 
-    private Version version;
-    private Country country;
-    private NetworkCode network;
+    private final CardProperty<Version> version = CardProperty.emptyProperty(Version.class);
+    private final CardProperty<Country> country = CardProperty.emptyProperty(Country.class);
+    private final CardProperty<NetworkCode> network = CardProperty.emptyProperty(NetworkCode.class);
     private int issuer;
     private int application;
     private CompactDate issuingDate;
@@ -24,9 +25,7 @@ public class Environment extends File<Environment> {
     private LongDate holderBirthDate;
     private int holderCompany;
     private int holderId;
-
-    private Profile profile;
-
+    private final CardProperty<Profile> profile = CardProperty.emptyProperty(Profile.class);
     private CompactDate prof1Date;
     private CompactDate prof2Date;
     private CompactDate prof3Date;
@@ -40,6 +39,7 @@ public class Environment extends File<Environment> {
     @Override
     public byte[] unparse() {
         BitUtil bit = new BitUtil(Calypso.RECORD_SIZE * 8);
+        String profHex = String.format("%03X", profile.getValue());
 
         bit.setNextInteger(version.getValue(), 4);
         bit.setNextInteger(country.getValue(), 12);
@@ -52,11 +52,15 @@ public class Environment extends File<Environment> {
         bit.setNextInteger(holderCompany, 8);
         bit.setNextInteger(holderId, 32);
 
-        bit.setNextInteger(profile.getProf1(), 4);
+        String prof1 = String.valueOf(profHex.charAt(0));
+        String prof2 = String.valueOf(profHex.charAt(1));
+        String prof3 = String.valueOf(profHex.charAt(2));
+
+        bit.setNextInteger(Integer.parseInt(prof1, 16), 4);
         bit.setNextInteger(prof1Date.getValue(), 16);
-        bit.setNextInteger(profile.getProf2(), 4);
+        bit.setNextInteger(Integer.parseInt(prof2, 16), 4);
         bit.setNextInteger(prof2Date.getValue(), 16);
-        bit.setNextInteger(profile.getProf3(), 4);
+        bit.setNextInteger(Integer.parseInt(prof3, 16), 4);
         bit.setNextInteger(prof3Date.getValue(), 16);
         bit.setNextInteger(holderPadding, 4);
 
@@ -78,9 +82,9 @@ public class Environment extends File<Environment> {
             data = tmp;
         }
 
-        this.version = Version.decode(ByteUtils.mostSignificantNibble(data[0]));
-        this.country = Country.decode(ByteUtils.extractInt(data, 0, 2, false) & 0x0FFF);
-        this.network = NetworkCode.decode(data[2] & 0xFF);
+        this.version.setValue(ByteUtils.mostSignificantNibble(data[0]));
+        this.country.setValue(ByteUtils.extractInt(data, 0, 2, false) & 0x0FFF);
+        this.network.setValue(data[2] & 0xFF);
         this.issuer = data[3] & 0xFF;
         this.application = ByteUtils.extractInt(data, 4, 4, false);
 
@@ -91,11 +95,11 @@ public class Environment extends File<Environment> {
         this.holderCompany = data[16] & 0xFF;
         this.holderId = ByteUtils.extractInt(data, 17, 4, false);
 
-        this.profile = Profile.decode(
-                ByteUtils.mostSignificantNibble(data[21]),
-                ByteUtils.mostSignificantNibble(data[23]),
-                ByteUtils.mostSignificantNibble(data[26])
-        );
+        this.profile.setValue(Integer.parseInt(
+                Integer.toHexString(ByteUtils.mostSignificantNibble(data[21])) +
+                        Integer.toHexString(ByteUtils.mostSignificantNibble(data[23])) +
+                        Integer.toHexString(ByteUtils.mostSignificantNibble(data[26])),
+                16));
 
         this.prof1Date = CompactDate.fromDays(ByteUtils.extractInt(
                 ByteUtils.extractBytes(data, 21 * 8 + 4, 2), 0, 2, false)) ;
