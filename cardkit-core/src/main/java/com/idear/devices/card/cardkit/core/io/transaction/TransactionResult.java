@@ -101,8 +101,8 @@ public class TransactionResult<T> extends Item {
      * @throws CardKitException If reflection fails or no suitable constructor is found.
      */
     @JsonIgnore
-    public TransactionResult<T> throwMessageOnError(Class<? extends CardKitException> exceptionClass) {
-        if (!isOk())
+    public TransactionResult<T> throwMessageOnError(Class<? extends Exception> exceptionClass) {
+        if (is(TransactionStatus.ERROR))
             try {
                 throw (RuntimeException) exceptionClass.getConstructor(String.class)
                         .newInstance(message);

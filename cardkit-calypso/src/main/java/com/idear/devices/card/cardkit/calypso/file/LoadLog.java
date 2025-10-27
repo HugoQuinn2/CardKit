@@ -1,6 +1,6 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
@@ -40,11 +40,11 @@ public class LoadLog extends File<LoadLog> {
         if (data == null)
             throw new IllegalArgumentException("Null data.");
 
-        if (data.length > CDMX.RECORD_SIZE)
+        if (data.length > Calypso.RECORD_SIZE)
             throw new IllegalArgumentException("Data overflow.");
 
-        if (data.length < CDMX.RECORD_SIZE) {
-            byte[] tmp = new byte[CDMX.RECORD_SIZE];
+        if (data.length < Calypso.RECORD_SIZE) {
+            byte[] tmp = new byte[Calypso.RECORD_SIZE];
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }

@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.core.io.card.file;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.io.Item;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,7 +14,11 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public abstract class File<T extends File<T>> extends Item {
+
+    @JsonIgnore
     private String content;
+
+    @JsonIgnore
     private byte fileId;
 
     /**

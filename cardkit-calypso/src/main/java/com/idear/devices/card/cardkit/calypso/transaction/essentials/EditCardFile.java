@@ -44,7 +44,7 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
      * @param recordNumber  The index of the record to update.
      */
     public EditCardFile(File<?> file, int recordNumber, WriteAccessLevel writeAccessLevel) {
-        super("edit file");
+        super("EDIT_FILE");
         this.file = file;
         this.recordNumber = recordNumber;
         this.writeAccessLevel = writeAccessLevel;

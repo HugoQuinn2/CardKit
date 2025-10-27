@@ -1,0 +1,11 @@
+{
+  "debitWhiteList" : [
+    "AAAA"
+  ],
+  "loadWhiteList" : [
+    "BBBB"
+  ],
+  "blackList" : [
+    "CCCC"
+  ]
+}

@@ -25,6 +25,7 @@
         <module>cardkit-core</module>
         <module>cardkit-calypso</module>
         <module>cardkit-test</module>
+        <module>cardkit-example</module>
     </modules>
 
     <properties>

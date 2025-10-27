@@ -1,7 +1,7 @@
 package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
@@ -77,7 +77,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readEnvironmentFile(ReaderPCSC reader) {
         readFile = reader.execute(
-                new ReadCardFile(writeAccessLevel, CDMX.ENVIRONMENT_FILE, 1)
+                new ReadCardFile(writeAccessLevel, Calypso.ENVIRONMENT_FILE, 1)
         );
 
         if (readFile.isOk()) {
@@ -89,7 +89,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readEventFiles(ReaderPCSC reader) {
         readFiles = reader.execute(
-                new ReadCardFilePartially(CDMX.EVENT_FILE, (byte) 1, (byte) 3, 0, 29)
+                new ReadCardFilePartially(Calypso.EVENT_FILE, (byte) 1, (byte) 3, 0, 29)
         );
 
         if (!readFiles.isOk()) {
@@ -107,7 +107,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readContractFiles(ReaderPCSC reader) {
         readFiles = reader.execute(
-                new ReadCardFilePartially(CDMX.CONTRACT_FILE, (byte) 1, (byte) 8, 0, 10)
+                new ReadCardFilePartially(Calypso.CONTRACT_FILE, (byte) 1, (byte) 8, 0, 10)
         );
 
         if (!readFiles.isOk()) {

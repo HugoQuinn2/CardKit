@@ -16,32 +16,67 @@ import java.time.LocalDate;
 @Data
 public class Contract extends File<Contract> {
 
+    /** Record number from list*/
     private int id;
 
+    /** Structure version contract*/
     private int version;
+
+    /** Actual status contract*/
     private ContractStatus status;
-    private int rfu;
+
+    /** Reserved for future use*/
+    private int rfu = 0;
+
+    /** Start date validity contract*/
     private ReverseDate startDate;
+
+    /** Duration contract*/
     private int duration;
+
+    /** Network that issued this contract*/
     private NetworkCode network;
+
+    /** Provider that issued this contract*/
     private Provider provider;
+
+    /** Modes of transportation in which the contract is valid*/
     private Modality modality;
+
     private int counterCode;
+
+    /** Contract type*/
     private Tariff tariff;
+
+    /** Determine whether the contract allows transfers*/
     private int journeyInterChanges;
+
+    /** Code to identify the class to which the contract belongs (e.g: first class, second class, ...)
+     * Defined by the {@link Contract#provider} Organization
+     */
     private int vehicleClassAllowed;
-    private int restrictTime;
+
+    /** Code to identify temporal constraints*/
+    private RestrictTime restrictTime;
+
+    /** Code of the condition for which the contract is not valid*/
     private int restrictCode;
+
+    /** Number of trips authorized per period in format*/
     private int periodJourney;
+
+    /** Geographical areas where the contract is valid*/
     private long location;
+
+    /** Contract issue date*/
     private CompactDate saleDate;
     private int saleSam;
-    private int saleCounter;
-    private int authKvc;
-    private int authenticator;
+    private int saleCounter = 0;
+    private int authKvc = 0;
+    private int authenticator = 0;
 
     public Contract(int id) {
-        super(null, CDMX.CONTRACT_FILE);
+        super(null, Calypso.CONTRACT_FILE);
         this.id = id;
     }
 
@@ -52,7 +87,7 @@ public class Contract extends File<Contract> {
     @JsonIgnore
     @Override
     public byte[] unparse() {
-        BitUtil bit = new BitUtil(CDMX.RECORD_SIZE * 8);
+        BitUtil bit = new BitUtil(Calypso.RECORD_SIZE * 8);
 
         bit.setNextInteger(version, 8);
         bit.setNextInteger(status.getValue(), 8);
@@ -66,7 +101,7 @@ public class Contract extends File<Contract> {
         bit.setNextInteger(tariff.getValue(), 5);
         bit.setNextInteger(journeyInterChanges, 1);
         bit.setNextInteger(vehicleClassAllowed, 2);
-        bit.setNextInteger(restrictTime, 5);
+        bit.setNextInteger(restrictTime.getValue(), 5);
         bit.setNextInteger(restrictCode, 8);
         bit.setNextInteger(periodJourney, 8);
         bit.setNextLong(location, 40);
@@ -85,11 +120,11 @@ public class Contract extends File<Contract> {
         if (data == null)
             throw new IllegalArgumentException("Null data.");
 
-        if (data.length > CDMX.RECORD_SIZE)
+        if (data.length > Calypso.RECORD_SIZE)
             throw new IllegalArgumentException("Data overflow.");
 
-        if (data.length < CDMX.RECORD_SIZE) {
-            byte[] tmp = new byte[CDMX.RECORD_SIZE];
+        if (data.length < Calypso.RECORD_SIZE) {
+            byte[] tmp = new byte[Calypso.RECORD_SIZE];
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }
@@ -110,7 +145,7 @@ public class Contract extends File<Contract> {
 
         this.journeyInterChanges  = (data[8] & 0b10000000) >> 7;
         this.vehicleClassAllowed  = (data[8] & 0b01100000) >> 5;
-        this.restrictTime         = (data[8] & 0b00011111);
+        this.restrictTime         = RestrictTime.decode(data[8] & 0b00011111);
 
         this.restrictCode         = data[9] & 0xff;
         this.periodJourney        = data[10] & 0xff;
@@ -141,23 +176,31 @@ public class Contract extends File<Contract> {
         throw new IllegalArgumentException("Invalid duration format this most be 0bnnpppppp, n: period, p: trips");
     }
 
-//    public static Contract buildContract(
-//            int id,
-//            int version,
-//            int network,
-//            Provider provider,
-//            Modality modality,
-//            ) {
-//        Contract contract = new Contract(id);
-//
-//        // Auto data
-//        contract.setStartDate(ReverseDate.now());
-//        contract.setDuration(60);
-//
-//        contract.setVersion(version);
-//
-//
-//        return contract;
-//    }
+    public static Contract buildContract(
+            int id,
+            int version,
+            NetworkCode networkCode,
+            Provider provider,
+            Modality modality,
+            Tariff tariff,
+            RestrictTime restrictTime,
+            int saleSam) {
+        Contract contract = new Contract(id);
+
+        contract.setVersion(version);
+        contract.setNetwork(networkCode);
+        contract.setProvider(provider);
+        contract.setModality(modality);
+        contract.setTariff(tariff);
+        contract.setRestrictTime(restrictTime);
+        contract.setSaleSam(saleSam);
+
+        contract.setStatus(ContractStatus.CONTRACT_PARTLY_USED);
+        contract.setStartDate(ReverseDate.now());
+        contract.setSaleDate(CompactDate.now());
+        contract.setDuration(PeriodType.encode(PeriodType.MONTH, 60));
+
+        return contract;
+    }
 
 }

@@ -7,7 +7,9 @@ import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardDat
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFile;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFilePartially;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Product;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Profile;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -104,6 +106,9 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         // Extract and set the card serial number
         calypsoCardCDMX.setSerial(HexUtil.toHex(calypsoCard.getApplicationSerialNumber()));
 
+        if (reader.getCardTransactionManager() != null)
+            reader.getCardTransactionManager().processCommands(ChannelControl.CLOSE_AFTER);
+
         // Initialize the secure transaction manager for DEBIT operations
         SecureRegularModeTransactionManager cardTransactionManager =
                 ReaderPCSC.calypsoCardApiFactory.createSecureRegularModeTransactionManager(
@@ -123,6 +128,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
         // Store the card balance
         calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
+        calypsoCardCDMX.setProduct(parseProduct(calypsoCard));
 
         readLogFiles(reader);
         readEnvironmentFile(reader);
@@ -155,7 +161,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readEnvironmentFile(ReaderPCSC reader) {
         readFile = reader.execute(
-                new ReadCardFile(WriteAccessLevel.DEBIT, CDMX.ENVIRONMENT_FILE, 1)
+                new ReadCardFile(WriteAccessLevel.DEBIT, Calypso.ENVIRONMENT_FILE, 1)
         );
 
         if (readFile.isOk()) {
@@ -167,7 +173,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readEventFiles(ReaderPCSC reader) {
         readFiles = reader.execute(
-                new ReadCardFilePartially(CDMX.EVENT_FILE, (byte) 1, (byte) 3, 0, 29)
+                new ReadCardFilePartially(Calypso.EVENT_FILE, (byte) 1, (byte) 3, 0, 29)
         );
 
         if (!readFiles.isOk()) {
@@ -185,7 +191,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readContractFiles(ReaderPCSC reader) {
         readFiles = reader.execute(
-                new ReadCardFilePartially(CDMX.CONTRACT_FILE, (byte) 1, (byte) 8, 0, 10)
+                new ReadCardFilePartially(Calypso.CONTRACT_FILE, (byte) 1, (byte) 8, 0, 10)
         );
 
         if (!readFiles.isOk()) {
@@ -202,5 +208,24 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
             );
         }
         calypsoCardCDMX.setContracts(contracts);
+    }
+
+    private Product parseProduct(CalypsoCard calypsoCard) {
+        if (calypsoCard.isHce())
+            return Product.CALYPSO_HCE;
+
+        switch (calypsoCard.getProductType()) {
+            case PRIME_REVISION_1:
+            case PRIME_REVISION_2:
+            case PRIME_REVISION_3:
+                return Product.CALYPSO_PRIME;
+            case LIGHT:
+                return Product.CALYPSO_LIGHT;
+            case BASIC:
+                return Product.CALYPSO_BASIC;
+            case UNKNOWN:
+            default:
+                return Product.RFU;
+        }
     }
 }

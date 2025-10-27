@@ -6,9 +6,12 @@ import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.ContractStatus;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.NetworkCode;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
+import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -40,15 +43,11 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
     public static final String NAME = "RELOAD_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
+    private final Provider provider;
     private final Contract contract;
     private final int passenger;
-    private final int locationId;
+    private final LocationCode locationId;
     private final int amount;
-
-    private int provider = 0;
-    private int maxBalance = 500_000;
-    private int contractDaysOffset = 15;
-    private TransactionType transactionType = TransactionType.RELOAD;
 
     /**
      * Constructs a reload and renew transaction for a specific card.
@@ -58,13 +57,45 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      * @param contract        The contract to renew if applicable.
      * @param locationId      The location ID performing the operation.
      */
-    public ReloadCard(CalypsoCardCDMX calypsoCardCDMX, int amount, Contract contract, int passenger, int locationId) {
+    public ReloadCard(
+            CalypsoCardCDMX calypsoCardCDMX,
+            Provider provider,
+            LocationCode locationId,
+            int amount,
+            Contract contract,
+            int passenger) {
         super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
+        this.provider = provider;
         this.amount = amount;
         this.contract = contract;
         this.passenger = passenger;
         this.locationId = locationId;
+    }
+
+    /**
+     * Constructs a reload and renew transaction for a specific card.
+     *
+     * @param calypsoCardCDMX The card to reload.
+     * @param amount          The amount to add to the card balance.
+     * @param locationId      The location ID performing the operation.
+     */
+    public ReloadCard(
+            CalypsoCardCDMX calypsoCardCDMX,
+            Provider provider,
+            LocationCode locationId,
+            int amount) {
+        super(NAME);
+        this.calypsoCardCDMX = calypsoCardCDMX;
+        this.provider = provider;
+        this.amount = amount;
+        this.passenger = 0;
+        this.locationId = locationId;
+
+        this.contract = calypsoCardCDMX.getContracts()
+                .findFirst(c -> c.getStatus().isAccepted())
+                .orElseThrow(() -> new CardException(
+                        "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
     }
 
     /**
@@ -75,27 +106,12 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      */
     @Override
     public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card invalidated");
 
-        // Step 2: Check contract validity
-        if (!contract.getStatus().equals(ContractStatus.CONTRACT_PARTLY_USED))
-            throw new CardException("No valid contract on card");
-
-        if (calypsoCardCDMX.getBalance() + amount > maxBalance)
-            throw new CardException("Final balance exceeds maximum (%s): %s", maxBalance, calypsoCardCDMX.getBalance() + amount);
-
-        // Step 3: Renew contract
-        if (contract.isExpired(contractDaysOffset))
-            throw new CardException("Contract expired");
-
 
         // Step 4: Perform reload operation
-//        reader.getCardTransactionManager()
-//                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
-//                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
-//                .processCommands(ChannelControl.KEEP_OPEN);
-
         reader.getCardTransactionManager()
                 .prepareOpenSecureSession(WriteAccessLevel.LOAD)
                 .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
@@ -105,61 +121,26 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
                         CompactTime.now().toBytes(),
                         ByteUtils.extractBytes(0, 2))
                 .prepareCloseSecureSession()
-                .processCommands(ChannelControl.CLOSE_AFTER);
+                .processCommands(ChannelControl.KEEP_OPEN);
 
-//        reader.execute(
-//                new SaveEvent(
-//                        transactionType,
-//                        calypsoCardCDMX.getEnvironment(),
-//                        contract,
-//                        passenger,
-//                        locationId,
-//                        amount,
-//                        calypsoCardCDMX.getEvents().getNextTransactionNumber())
-//        );
+        reader.execute(
+                new SaveEvent(
+                        calypsoCardCDMX,
+                        TransactionType.RELOAD,
+                        calypsoCardCDMX.getEnvironment().getNetwork(),
+                        provider,
+                        locationId,
+                        contract,
+                        passenger,
+                        calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+                        amount
+                )
+        );
 
         return TransactionResult.<Boolean>builder()
                 .transactionStatus(TransactionStatus.OK)
                 .data(true)
                 .message(String.format("Final card balance for '%s': %s", calypsoCardCDMX.getSerial(), calypsoCardCDMX.getBalance() + amount))
                 .build();
-    }
-
-    /**
-     * Sets the maximum allowed balance on the card.
-     *
-     * @param maxBalance Maximum balance
-     * @return This transaction for chaining
-     */
-    public ReloadCard maxBalance(int maxBalance) {
-        this.maxBalance = maxBalance;
-        return this;
-    }
-
-    /**
-     * Sets the number of days offset to consider for contract renewal.
-     *
-     * @param contractDaysOffset Days offset
-     * @return This transaction for chaining
-     */
-    public ReloadCard contractDaysOffset(int contractDaysOffset) {
-        this.contractDaysOffset = contractDaysOffset;
-        return this;
-    }
-
-    /**
-     * Sets the provider identifier for the reload event.
-     *
-     * @param provider Provider code
-     * @return This transaction for chaining
-     */
-    public ReloadCard provider(int provider) {
-        this.provider = provider;
-        return this;
-    }
-
-    public ReloadCard transactionType(TransactionType transactionType) {
-        this.transactionType = transactionType;
-        return this;
     }
 }

@@ -8,10 +8,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
-import com.idear.devices.card.cardkit.core.datamodel.location.StationCode;
-import com.idear.devices.card.cardkit.core.datamodel.location.TransportLocation;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.ProgressUpdate;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
@@ -49,7 +46,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
     public static final String NAME = "DEBIT_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final Provider deviceProvider;
+    private final Provider provider;
     private final Contract contract;
     private final int passenger;
     private final LocationCode locationId;
@@ -61,7 +58,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * Creates a new debit transaction with a known contract.
      *
      * @param calypsoCardCDMX The Calypso card instance.
-     * @param deviceProvider  The provider of the device performing the debit.
+     * @param provider  The provider of the device performing the debit.
      * @param contract        The contract associated with the card.
      * @param passenger       The passenger ID.
      * @param amount          The amount to debit.
@@ -69,14 +66,15 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      */
     public DebitCard(
             CalypsoCardCDMX calypsoCardCDMX,
-            Provider deviceProvider,
+            NetworkCode networkCode,
+            Provider provider,
             LocationCode locationId,
             int amount,
             int passenger,
             Contract contract) {
         super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
-        this.deviceProvider = deviceProvider;
+        this.provider = provider;
         this.contract = contract;
         this.passenger = passenger;
         this.amount = amount;
@@ -87,20 +85,20 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * Creates a new debit transaction, automatically resolving the first accepted contract.
      *
      * @param calypsoCardCDMX The Calypso card instance.
-     * @param deviceProvider  The provider of the device performing the debit.
+     * @param provider  The provider of the device performing the debit.
      * @param passenger       The passenger ID.
      * @param amount          The amount to debit.
      * @param locationId      The location of the transaction.
      */
     public DebitCard(
             CalypsoCardCDMX calypsoCardCDMX,
-            Provider deviceProvider,
+            Provider provider,
             LocationCode locationId,
             int amount,
             int passenger) {
         super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
-        this.deviceProvider = deviceProvider;
+        this.provider = provider;
         this.passenger = passenger;
         this.amount = amount;
         this.locationId = locationId;
@@ -115,16 +113,16 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * Creates a new debit transaction, automatically resolving the first accepted contract and default passenger 0.
      *
      * @param calypsoCardCDMX The Calypso card instance.
-     * @param deviceProvider  The provider of the device performing the debit.
+     * @param provider  The provider of the device performing the debit.
      * @param amount          The amount to debit.
      * @param locationId      The location of the transaction.
      */
     public DebitCard(
             CalypsoCardCDMX calypsoCardCDMX,
-            Provider deviceProvider,
+            Provider provider,
             LocationCode locationId,
             int amount) {
-        this(calypsoCardCDMX, deviceProvider, locationId, amount, 0);
+        this(calypsoCardCDMX, provider, locationId, amount, 0);
     }
 
     @Override
@@ -142,9 +140,9 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
 
         validatePassback(now, lastDebitDateTime);
 
-        Equipment equipment = resolveEquipment(locationId);
+        Equipment equipment = locationId.getEquipment();
         validateProfileOnEquipment(equipment);
-        validateContract(deviceProvider);
+        validateContract(provider);
 
         int finalAmount = resolveDebitAmount();
         performDebit(reader, finalAmount);
@@ -176,18 +174,6 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
     }
 
     /**
-     * Resolves the equipment for a given transaction location.
-     *
-     * @param location The transaction location.
-     * @return The equipment associated with the location.
-     */
-    private Equipment resolveEquipment(LocationCode location) {
-        if (location instanceof StationCode) return ((StationCode) location).getEquipment();
-        if (location instanceof TransportLocation) return ((TransportLocation) location).getEquipment();
-        return Equipment.RFU;
-    }
-
-    /**
      * Validates whether the current profile is allowed on the given equipment.
      *
      * @param equipment The device performing the debit.
@@ -211,8 +197,8 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
         if (!contract.getStatus().isAccepted())
             throw new CardException("card without valid contract");
 
-        if (contract.isExpired(contractDaysOffset))
-            throw new CardException("card expired on %s", contract.getExpirationDate(contractDaysOffset));
+        if (contract.isExpired(0))
+            throw new CardException("card expired on %s", contract.getExpirationDate(0));
 
         if (contract.getModality() == Modality.MONOMODAL &&
                 !deviceProvider.equals(contract.getProvider())) {
@@ -264,13 +250,15 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      */
     private void recordEvent(ReaderPCSC reader, TransactionType transactionType, int finalAmount) {
         reader.execute(new SaveEvent(
+                calypsoCardCDMX,
                 transactionType,
-                calypsoCardCDMX.getEnvironment(),
+                calypsoCardCDMX.getEnvironment().getNetwork(),
+                provider,
+                locationId,
                 contract,
                 passenger,
-                locationId.getCode(),
-                finalAmount,
-                calypsoCardCDMX.getEvents().getNextTransactionNumber()
+                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+                finalAmount
         ));
     }
 
@@ -286,6 +274,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
                 : String.format("%s debit to card '%s' was made correctly, final balance: %s",
                 amount, calypsoCardCDMX.getSerial(), calypsoCardCDMX.getBalance() - finalAmount);
 
+        log.info(message);
         return TransactionResult.<Boolean>builder()
                 .transactionStatus(TransactionStatus.OK)
                 .data(true)

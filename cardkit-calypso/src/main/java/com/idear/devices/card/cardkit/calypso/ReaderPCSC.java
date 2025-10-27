@@ -235,33 +235,9 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
         }
     }
 
-    public void fireCardEvent(Event event) {
+    public void fireCardEvent(TransactionDataEvent transactionDataEvent) {
         for (EventListener eventListener : cardEventListenerList)
-            eventListener.onEvent(event);
-    }
-
-    public Factory factory() {
-        return new Factory(this);
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public static class Factory {
-
-        private final ReaderPCSC readerPCSC;
-
-        public TransactionResult<CalypsoCardCDMX> readAllCardData() {
-            return readerPCSC.execute(new ReadAllCard());
-        }
-
-        public TransactionResult<Boolean> invalidateCard(CalypsoCardCDMX calypsoCardCDMX, int locationCode) {
-            return readerPCSC.execute(new InvalidateCard(calypsoCardCDMX, locationCode));
-        }
-
-        public TransactionResult<Boolean> invalidateCard(CalypsoCardCDMX calypsoCardCDMX, Contract contract, int locationCode) {
-            return readerPCSC.execute(new InvalidateCard(calypsoCardCDMX, contract, locationCode));
-        }
-
+            eventListener.onEvent(transactionDataEvent);
     }
 
 }

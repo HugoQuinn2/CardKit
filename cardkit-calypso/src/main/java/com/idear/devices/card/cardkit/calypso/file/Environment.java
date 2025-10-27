@@ -4,6 +4,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
+import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,12 +34,33 @@ public class Environment extends File<Environment> {
     private int holderPadding;
 
     public Environment() {
-        super(null, CDMX.ENVIRONMENT_FILE);
+        super(null, Calypso.ENVIRONMENT_FILE);
     }
 
     @Override
     public byte[] unparse() {
-        return new byte[0];
+        BitUtil bit = new BitUtil(Calypso.RECORD_SIZE * 8);
+
+        bit.setNextInteger(version.getValue(), 4);
+        bit.setNextInteger(country.getValue(), 12);
+        bit.setNextInteger(network.getValue(), 8);
+        bit.setNextInteger(issuer, 8);
+        bit.setNextInteger(application, 32);
+        bit.setNextInteger(issuingDate.getValue(), 16);
+        bit.setNextInteger(endDate.getValue(), 16);
+        bit.setNextInteger(holderBirthDate.getValue(), 32);
+        bit.setNextInteger(holderCompany, 8);
+        bit.setNextInteger(holderId, 32);
+
+        bit.setNextInteger(profile.getProf1(), 4);
+        bit.setNextInteger(prof1Date.getValue(), 16);
+        bit.setNextInteger(profile.getProf2(), 4);
+        bit.setNextInteger(prof2Date.getValue(), 16);
+        bit.setNextInteger(profile.getProf3(), 4);
+        bit.setNextInteger(prof3Date.getValue(), 16);
+        bit.setNextInteger(holderPadding, 4);
+
+        return bit.getData();
     }
 
     @Override
@@ -47,11 +69,11 @@ public class Environment extends File<Environment> {
         if (data == null)
             throw new IllegalArgumentException("Null data.");
 
-        if (data.length > CDMX.RECORD_SIZE)
+        if (data.length > Calypso.RECORD_SIZE)
             throw new IllegalArgumentException("Data overflow.");
 
-        if (data.length < CDMX.RECORD_SIZE) {
-            byte[] tmp = new byte[CDMX.RECORD_SIZE];
+        if (data.length < Calypso.RECORD_SIZE) {
+            byte[] tmp = new byte[Calypso.RECORD_SIZE];
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }

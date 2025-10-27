@@ -1,10 +1,9 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.ByteBuilder;
 
-import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 public class Events extends File<Events> implements List<Event> {
@@ -12,7 +11,7 @@ public class Events extends File<Events> implements List<Event> {
     private final List<Event> events = new ArrayList<>();
 
     public Events() {
-        super(null, CDMX.EVENT_FILE);
+        super(null, Calypso.EVENT_FILE);
     }
 
     /**

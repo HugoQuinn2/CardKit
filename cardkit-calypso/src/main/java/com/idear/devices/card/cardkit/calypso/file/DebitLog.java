@@ -1,6 +1,6 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
@@ -31,7 +31,7 @@ public class DebitLog extends File<DebitLog> {
     @Override
     public byte[] unparse() {
 
-        BitUtil bit = new BitUtil(CDMX.RECORD_SIZE * 8);
+        BitUtil bit = new BitUtil(Calypso.RECORD_SIZE * 8);
 
         bit.setNextInteger(amount, 16);
         bit.setNextInteger(date.getValue(), 16);

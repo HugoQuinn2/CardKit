@@ -6,9 +6,9 @@ import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.ContractStatus;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
+import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
@@ -17,6 +17,7 @@ import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
 import org.eclipse.keypop.calypso.card.transaction.SvOperation;
+import sun.nio.ch.Net;
 
 /**
  * Represents a transaction that verifies whether a Calypso card contract is about to expire
@@ -53,11 +54,12 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
     public static final String NAME = "RENEWED_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final int locationId;
+    private final NetworkCode networkCode;
+    private final Provider provider;
+    private final LocationCode locationId;
     private final Contract contract;
     private final int daysOffset;
-
-    private int duration = 60;
+    private final int duration;
 
     /**
      * Creates a new {@code RenewedContract} transaction.
@@ -67,23 +69,47 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
      * @param contract        the contract to be verified and potentially renewed
      * @param daysOffset      the number of days before expiration to trigger a renewal
      */
-    public RenewedCard(CalypsoCardCDMX calypsoCardCDMX, int locationId, Contract contract, int daysOffset) {
+    public RenewedCard(
+            CalypsoCardCDMX calypsoCardCDMX,
+            NetworkCode networkCode,
+            Provider provider,
+            LocationCode locationId,
+            Contract contract,
+            int daysOffset,
+            int duration) {
         super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
+        this.networkCode = networkCode;
+        this.provider = provider;
         this.locationId = locationId;
         this.contract = contract;
         this.daysOffset = daysOffset;
+        this.duration = duration;
     }
 
     /**
-     * Sets the duration in months of the renewed contract.
+     * Creates a new {@code RenewedContract} transaction.
      *
-     * @param duration the new duration value
-     * @return this instance for method chaining
+     * @param calypsoCardCDMX the Calypso card wrapper
+     * @param locationId      the location ID where the renewal occurs
+     * @param contract        the contract to be verified and potentially renewed
+     * @param daysOffset      the number of days before expiration to trigger a renewal
      */
-    public RenewedCard duration(int duration) {
-        this.duration = duration;
-        return this;
+    public RenewedCard(
+            CalypsoCardCDMX calypsoCardCDMX,
+            NetworkCode networkCode,
+            Provider provider,
+            LocationCode locationId,
+            Contract contract,
+            int daysOffset) {
+        super(NAME);
+        this.calypsoCardCDMX = calypsoCardCDMX;
+        this.networkCode = networkCode;
+        this.provider = provider;
+        this.locationId = locationId;
+        this.contract = contract;
+        this.daysOffset = daysOffset;
+        this.duration = PeriodType.encode(PeriodType.MONTH, 60);
     }
 
     /**
@@ -111,19 +137,26 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
         contract.setStatus(ContractStatus.CONTRACT_PARTLY_USED);
 
        reader.execute(
-                new EditCardFile(contract, 1, WriteAccessLevel.DEBIT))
-                .throwMessageOnError(CardException.class);
+                new EditCardFile(
+                        contract,
+                        contract.getId(),
+                        WriteAccessLevel.DEBIT))
+               .throwMessageOnError(CardException.class)
+               .throwMessageOnAborted(CardException.class);
 
         reader.execute(
                 new SaveEvent(
+                        calypsoCardCDMX,
                         TransactionType.SV_CONTRACT_RENEWAL,
-                        calypsoCardCDMX.getEnvironment(),
+                        calypsoCardCDMX.getEnvironment().getNetwork(),
+                        provider,
+                        locationId,
                         contract,
                         0,
-                        locationId,
                         0,
                         calypsoCardCDMX.getEvents().getNextTransactionNumber()
-                )).throwMessageOnError(CardException.class);
+                )).throwMessageOnError(CardException.class)
+                .throwMessageOnAborted(CardException.class);
 
         return TransactionResult
                 .<Boolean>builder()

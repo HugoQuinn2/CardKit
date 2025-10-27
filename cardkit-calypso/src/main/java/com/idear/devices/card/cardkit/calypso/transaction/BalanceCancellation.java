@@ -4,9 +4,12 @@ import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.NetworkCode;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
+import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -43,9 +46,10 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
     public static final String NAME = "BALANCE_CANCELLATION";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final int locationId;
-    private final Contract contract;
     private final TransactionType transactionType;
+    private final Provider provider;
+    private final LocationCode locationId;
+    private final Contract contract;
 
     /**
      * Constructs a new {@code BalanceCancellation} transaction.
@@ -57,11 +61,13 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
      */
     public BalanceCancellation(
             CalypsoCardCDMX calypsoCardCDMX,
-            int locationId,
-            Contract contract,
-            TransactionType transactionType) {
+            TransactionType transactionType,
+            Provider provider,
+            LocationCode locationId,
+            Contract contract) {
         super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
+        this.provider = provider;
         this.locationId = locationId;
         this.contract = contract;
         this.transactionType = transactionType;
@@ -76,8 +82,9 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
      */
     public BalanceCancellation(
             CalypsoCardCDMX calypsoCardCDMX,
-            int locationId,
-            TransactionType transactionType) {
+            TransactionType transactionType,
+            Provider provider,
+            LocationCode locationId) {
         super(NAME);
         this.calypsoCardCDMX = calypsoCardCDMX;
         this.locationId = locationId;
@@ -87,6 +94,7 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
                 .findFirst(c -> c.getStatus().isAccepted())
                 .orElseThrow(() -> new CardException(
                         "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
+        this.provider = provider;
     }
 
     /**
@@ -122,11 +130,13 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
                 .processCommands(ChannelControl.KEEP_OPEN);
 
         reader.execute(new SaveEvent(
+                calypsoCardCDMX,
                 transactionType,
-                calypsoCardCDMX.getEnvironment(),
+                calypsoCardCDMX.getEnvironment().getNetwork(),
+                provider,
+                locationId,
                 contract,
                 0,
-                locationId,
                 negativeAmount,
                 calypsoCardCDMX.getEvents().getNextTransactionNumber())
         );
