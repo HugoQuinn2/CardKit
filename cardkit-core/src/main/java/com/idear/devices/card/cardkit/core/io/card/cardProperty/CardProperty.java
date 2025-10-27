@@ -26,7 +26,7 @@ public class CardProperty<E extends Enum<E> & IDataModel> implements IDataModel 
     /**
      * The enum class used to decode the value.
      */
-    private final Class<E> enumClass;
+    private Class<E> enumClass;
 
     /**
      * Sets the value of this property using another {@link IDataModel} instance.

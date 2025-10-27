@@ -8,6 +8,7 @@ import com.idear.devices.card.cardkit.calypso.CalypsoSam;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
+import com.idear.devices.card.cardkit.core.io.card.cardProperty.CardProperty;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.reader.CardReaderEvent;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,8 @@ public class ACS {
                     .print()
                     .getData();
 
-            calypsoCardCDMX.getEnvironment().setProfile(Profile.GENERAL);
+            calypsoCardCDMX.getEnvironment().unparse();
+            calypsoCardCDMX.getEnvironment().getProfile().setValueByModel(Profile.GENERAL);
 
             reader.execute(
                     new EditCardFile(
@@ -64,17 +66,23 @@ public class ACS {
             CalypsoCardCDMX calypsoCardCDMX =  reader.execute(new ReadAllCard())
                     .throwMessageOnAborted(CardException.class)
                     .throwMessageOnError(CardException.class)
+                    .print()
                     .getData();
 
-            reader.execute(new ReloadCard(
-                    calypsoCardCDMX,
-                    Provider.CABLEBUS,
-                    locationCode,
-                    10_000
-            )).print();
+//            reader.execute(new ReloadCard(
+//                    calypsoCardCDMX,
+//                    Provider.CABLEBUS,
+//                    locationCode,
+//                    10_000
+//            )).print();
         });
 
         safeWait(-1);
+    }
+
+    @Test
+    public void property() {
+        System.out.println(CardProperty.fromHexStringValue("CONTRALOR", Profile.class));
     }
 
 

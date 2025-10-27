@@ -132,7 +132,7 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
         reader.execute(new SaveEvent(
                 calypsoCardCDMX,
                 transactionType,
-                calypsoCardCDMX.getEnvironment().getNetwork(),
+                calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
                 provider,
                 locationId,
                 contract,

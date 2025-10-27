@@ -14,28 +14,38 @@ public enum Profile implements IDataModel {
     // -----------------------------
     // MULTIMODAL
     // -----------------------------
-    GENERAL(0x00, 0x00, 0x00, 120, 0, PeriodType.encode(PeriodType.MONTH, 60), Tariff.STORED_VALUE, 0, Collections.emptyList()),
-    DIF(0x03, 0, 0, 60, 60, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
-    COPACO(0x05, 0, 0, 36, 36, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
-    CONTRALOR(0x0D, 0, 0, 60, 60, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
+    GENERAL(0x000,
+            0, 0, 0,
+            120,
+            0,
+            PeriodType.encode(PeriodType.MONTH, 60),
+            Tariff.STORED_VALUE,
+            0,
+            Collections.emptyList()
+    ),
+
+    DIF(0x300, 3, 0, 0, 60, 60, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
+    COPACO(0x500, 0,0, 0, 36, 36, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
+    CONTRALOR(0xD00, 0, 0, 0, 60, 60, PeriodType.encode(PeriodType.MONTH, 60), Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 15, Arrays.asList(Equipment.VALIDATOR_WITH_SERVICE_DOOR, Equipment.SPECIAL_SERVICE_VALIDATOR)),
 
     // -----------------------------
     // MONOMODAL
     // -----------------------------
-    POLICE(0x06, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
-    MAINTENANCE(0x07, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
-    CASH_COLLECTION(0x08, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
-    CARDS_SUPPLY(0x12, 0, 0, 0, 0, 0, null, 0, Collections.emptyList()),
-    SUPERVISOR(0x09, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
-    EMPLOYEE(0x0A, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
-    VALUE_DEPOSIT(0x0B, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    POLICE(0x600, 0, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    MAINTENANCE(0x700, 0, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    CASH_COLLECTION(0x800, 0, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    CARDS_SUPPLY(0xC00,12, 0, 0, 0, 0, 0, null, 0, Collections.emptyList()),
+    SUPERVISOR(0x900,9, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    EMPLOYEE(0xA00, 0xA, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
+    VALUE_DEPOSIT(0xB00,0xB, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITHOUT_SECURITY_BACKUP, 0, Collections.emptyList()),
 
 
-    ELDERLY_70(0x02, 0, 0, 60, 0, 0, Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
-    ELDERLY_60(0x0E, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
-    STUDENT(0x04, 0, 0, 60, 6, PeriodType.encode(PeriodType.MONTH, 6), Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
-    RFU (-1, -1, -1, -1, -1, -1, null,0, Collections.emptyList());
+    ELDERLY_70(0x200, 2, 0, 0, 60, 0, 0, Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
+    ELDERLY_60(0xE00, 0xE, 0, 0, 120, 0, 0, Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
+    STUDENT(0x400, 0x4, 0, 0, 60, 6, PeriodType.encode(PeriodType.MONTH, 6), Tariff.FREE_PASS_WITH_SECURITY_BACKUP,0, Collections.emptyList()),
+    RFU (-1, -1, -1, -1, -1, -1, -1, null,0, Collections.emptyList());
 
+    private final int value;
     private final int prof1;
     private final int prof2;
     private final int prof3;
@@ -55,11 +65,6 @@ public enum Profile implements IDataModel {
 
     public String getCode() {
         return String.format("%d%d%d", prof1, prof2, prof3);
-    }
-
-    @Override
-    public int getValue() {
-        return Integer.parseInt(getCode());
     }
 
     public boolean isAllowedOn(Equipment equipment) {

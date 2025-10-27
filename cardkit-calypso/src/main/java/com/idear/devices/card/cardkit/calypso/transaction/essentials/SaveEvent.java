@@ -145,13 +145,13 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
 
         // Build the event data
         Event event = Event.builEvent(
-                transactionType,
-                networkCode,
-                provider,
+                transactionType.getValue(),
+                networkCode.getValue(),
+                provider.getValue(),
                 contract.getId(),
                 passenger,
                 transactionNumber,
-                locationId,
+                locationId.getValue(),
                 amount
         );
 
@@ -189,7 +189,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
                                     .loadLog(readLoadLog(reader))
                                     .event(event)
                                     .contract(contract)
-                                    .profile(calypsoCardCDMX.getEnvironment().getProfile())
+                                    .profile(calypsoCardCDMX.getEnvironment().getProfile().decode())
                                     .transactionAmount(amount)
                                     .balanceBeforeTransaction(calypsoCardCDMX.getBalance())
                                     .locationCode(locationId)

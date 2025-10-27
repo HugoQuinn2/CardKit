@@ -48,7 +48,7 @@ public class SellCard extends Transaction<Boolean, ReaderPCSC> {
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card invalidated");
 
-        Profile profile = calypsoCardCDMX.getEnvironment().getProfile();
+        Profile profile = calypsoCardCDMX.getEnvironment().getProfile().decodeOrElse(Profile.RFU);
 
         Optional<Contract> optionalContract = calypsoCardCDMX.getContracts()
                 .findFirst(c -> c.getStatus().isAccepted());
@@ -56,7 +56,7 @@ public class SellCard extends Transaction<Boolean, ReaderPCSC> {
         contract = optionalContract.orElseGet(() -> Contract.buildContract(
                 1,
                 1,
-                calypsoCardCDMX.getEnvironment().getNetwork(),
+                calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
                 provider,
                 modality,
                 profile.getTariff(),
@@ -80,7 +80,7 @@ public class SellCard extends Transaction<Boolean, ReaderPCSC> {
                 new SaveEvent(
                         calypsoCardCDMX,
                         TransactionType.CARD_PURCHASE,
-                        calypsoCardCDMX.getEnvironment().getNetwork(),
+                        calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
                         provider,
                         locationCode,
                         contract,

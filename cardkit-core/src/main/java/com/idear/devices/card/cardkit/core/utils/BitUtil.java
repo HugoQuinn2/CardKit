@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.core.utils;
 
+import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -614,6 +615,26 @@ public class BitUtil {
         }
 
         setNextValue(pValue, pLength, Integer.SIZE - 1);
+    }
+
+    /**
+     * Add Integer to the current position with the specified size
+     *
+     * Be careful with java integer bit sign
+     *
+     * @param pValue
+     *            the value to set
+     *
+     * @param pLength
+     *            the length of the integer
+     */
+    public void setNextInteger(final IDataModel pValue, final int pLength) {
+
+        if (pLength > Integer.SIZE) {
+            throw new IllegalArgumentException("Integer overflow with length > 32");
+        }
+
+        setNextValue(pValue.getValue(), pLength, Integer.SIZE - 1);
     }
 
     /**

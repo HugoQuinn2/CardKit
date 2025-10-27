@@ -148,7 +148,7 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
                 new SaveEvent(
                         calypsoCardCDMX,
                         TransactionType.SV_CONTRACT_RENEWAL,
-                        calypsoCardCDMX.getEnvironment().getNetwork(),
+                        calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
                         provider,
                         locationId,
                         contract,

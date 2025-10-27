@@ -127,7 +127,7 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
                 new SaveEvent(
                         calypsoCardCDMX,
                         TransactionType.RELOAD,
-                        calypsoCardCDMX.getEnvironment().getNetwork(),
+                        calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
                         provider,
                         locationId,
                         contract,

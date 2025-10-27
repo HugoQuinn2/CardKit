@@ -4,23 +4,21 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Equipment;
 import com.idear.devices.card.cardkit.core.io.Item;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@Data
+@AllArgsConstructor
 public class LocationCode extends Item implements IDataModel {
 
-    private final int value;
+    private int value;
 
     @JsonValue
     public String toJsonValue() {
         return Integer.toHexString(value);
-    }
-
-    @Override
-    public String toString() {
-        return toJsonValue();
     }
 
     public Equipment getEquipment() {
@@ -31,6 +29,10 @@ public class LocationCode extends Item implements IDataModel {
     public int getDeviceId() {
         String sValue = Integer.toString(value);
         return Integer.parseInt(sValue.substring(4, 6));
+    }
+
+    public static LocationCode emptyLocationCode() {
+        return new LocationCode(0);
     }
 
 }
