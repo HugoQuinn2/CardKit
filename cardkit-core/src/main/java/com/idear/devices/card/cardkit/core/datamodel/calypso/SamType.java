@@ -13,6 +13,7 @@ public enum SamType implements IDataModel {
     SL(0x30),
     DV(0x80),
     CPP(0x40),
+    CPPC(0x48),
     CPB(0x51),
     CPS(0x52),
     CPT(0x53),
