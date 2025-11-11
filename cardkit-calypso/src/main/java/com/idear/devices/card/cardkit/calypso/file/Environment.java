@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.calypso.file;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
 import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
@@ -84,6 +85,7 @@ public class Environment extends File<Environment> {
      * @return {@code true} if {@link Environment#endDate} is not empty and is not expired,
      * otherwise return {@code false}
      */
+    @JsonIgnore
     public boolean isApplicationExpired() {
         return !endDate.isEmpty() &&
                 LocalDate.now().isAfter(endDate.getDate());
