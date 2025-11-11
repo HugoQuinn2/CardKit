@@ -1,7 +1,6 @@
-package com.idear.devices.card.cardkit.core.io.card.cardProperty;
+package com.idear.devices.card.cardkit.core.datamodel;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -16,7 +15,7 @@ import lombok.Data;
  */
 @AllArgsConstructor
 @Data
-public class CardProperty<E extends Enum<E> & IDataModel> implements IDataModel {
+public class ValueDecoder<E extends Enum<E> & IDataModel> implements IDataModel {
 
     /**
      * The raw integer value of the property.
@@ -29,12 +28,25 @@ public class CardProperty<E extends Enum<E> & IDataModel> implements IDataModel 
     private Class<E> enumClass;
 
     /**
+     * The default value used on case of empty value
+     */
+    private int defaultValue;
+
+    /**
      * Sets the value of this property using another {@link IDataModel} instance.
      *
      * @param iDataModel the data model whose value will be copied
      */
     public void setValueByModel(E iDataModel) {
         this.value = iDataModel.getValue();
+    }
+
+    /**
+     * Get {@link ValueDecoder#value} if this is different to 0, otherwise get {@link ValueDecoder#defaultValue }
+     */
+    public int getValue() {
+        return value == 0 ?
+                defaultValue : value;
     }
 
     /**
@@ -65,7 +77,7 @@ public class CardProperty<E extends Enum<E> & IDataModel> implements IDataModel 
      * @param defaultDecode the fallback enum constant
      * @return the decoded enum constant or the fallback
      */
-    public E decodeOrElse(E defaultDecode) {
+    public E decode(E defaultDecode) {
         try {
             return decode();
         } catch (Exception e) {
@@ -89,42 +101,74 @@ public class CardProperty<E extends Enum<E> & IDataModel> implements IDataModel 
         }
     }
 
+    @Override
+    public String toString() {
+        return toJsonValue();
+    }
+
     /**
-     * Creates a {@link CardProperty} from a string input.
+     * Creates a {@link ValueDecoder} from a string input.
      * If the input matches an enum constant name (case-insensitive), the corresponding value is used.
      * Otherwise, the input is parsed as a hexadecimal integer.
      *
      * @param input     the string to interpret (enum name or hex value)
      * @param enumClass the enum class used for decoding
      * @param <E>       the enum type that implements {@link IDataModel}
-     * @return a new {@link CardProperty} instance
+     * @return a new {@link ValueDecoder} instance
      * @throws IllegalArgumentException if the input is neither a valid enum name nor a hex value
      */
-    public static <E extends Enum<E> & IDataModel> CardProperty<E> fromHexStringValue(String input, Class<E> enumClass) {
+    public static <E extends Enum<E> & IDataModel> ValueDecoder<E> fromHexStringValue(String input, Class<E> enumClass, int defaultValue) {
         for (E constant : enumClass.getEnumConstants()) {
             if (constant.name().equalsIgnoreCase(input)) {
-                return new CardProperty<>(constant.getValue(), enumClass);
+                return new ValueDecoder<>(constant.getValue(), enumClass, defaultValue);
             }
         }
 
         try {
             int parsedValue = Integer.parseInt(input, 16);
-            return new CardProperty<>(parsedValue, enumClass);
+            return new ValueDecoder<>(parsedValue, enumClass, defaultValue);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid input: not a valid enum name or hex value " + input, e);
         }
     }
 
     /**
-     * Creates an empty {@link CardProperty} instance with a default value of 0.
+     * Creates a {@link ValueDecoder} from a string input.
+     * If the input matches an enum constant name (case-insensitive), the corresponding value is used.
+     * Otherwise, the input is parsed as a hexadecimal integer.
+     *
+     * @param input     the string to interpret (enum name or hex value)
+     * @param enumClass the enum class used for decoding
+     * @param <E>       the enum type that implements {@link IDataModel}
+     * @return a new {@link ValueDecoder} instance
+     * @throws IllegalArgumentException if the input is neither a valid enum name nor a hex value
+     */
+    public static <E extends Enum<E> & IDataModel> ValueDecoder<E> fromHexStringValue(String input, Class<E> enumClass) {
+        return fromHexStringValue(input, enumClass, 0);
+    }
+
+    /**
+     * Creates an empty {@link ValueDecoder} instance with a default value of 0.
      * This is useful for initializing a property when no value has been assigned yet.
      *
      * @param enumClass the enum class used for decoding
      * @param <E>       the enum type that implements {@link IDataModel}
-     * @return a new {@link CardProperty} instance with value 0
+     * @return a new {@link ValueDecoder} instance with value 0
      */
-    public static <E extends Enum<E> & IDataModel> CardProperty<E> emptyProperty(Class<E> enumClass) {
-        return new CardProperty<>(0, enumClass);
+    public static <E extends Enum<E> & IDataModel> ValueDecoder<E> emptyDecoder(Class<E> enumClass) {
+        return emptyDecoder(enumClass, 0);
+    }
+
+    /**
+     * Creates an empty {@link ValueDecoder} instance with a default value of 0.
+     * This is useful for initializing a property when no value has been assigned yet.
+     *
+     * @param enumClass the enum class used for decoding
+     * @param <E>       the enum type that implements {@link IDataModel}
+     * @return a new {@link ValueDecoder} instance with value 0
+     */
+    public static <E extends Enum<E> & IDataModel> ValueDecoder<E> emptyDecoder(Class<E> enumClass, int defaultValue) {
+        return new ValueDecoder<>(0, enumClass, defaultValue);
     }
 
 }
