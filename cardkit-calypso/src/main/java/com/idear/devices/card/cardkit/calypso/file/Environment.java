@@ -2,7 +2,7 @@ package com.idear.devices.card.cardkit.calypso.file;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
-import com.idear.devices.card.cardkit.core.io.card.cardProperty.CardProperty;
+import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
@@ -11,29 +11,82 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.eclipse.keyple.core.util.HexUtil;
 
+import java.time.LocalDate;
+
+/**
+ * It contains general information about the transportation application and the cardholder.
+ *
+ * @author Victor Hugo Gaspar Quinn
+ * @version 1.0.0
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class Environment extends File<Environment> {
 
-    private final CardProperty<Version> version = CardProperty.emptyProperty(Version.class);
-    private final CardProperty<Country> country = CardProperty.emptyProperty(Country.class);
-    private final CardProperty<NetworkCode> network = CardProperty.emptyProperty(NetworkCode.class);
+    /** File identifier, required for its reading */
+    public static final byte SFI_FILE = (byte) 0x07;
+
+    /** Version of the Environment and Holder structure */
+    private final ValueDecoder<Version> version = ValueDecoder.emptyDecoder(Version.class);
+
+    /** Country identifier according to ISO 3166. */
+    private final ValueDecoder<Country> country = ValueDecoder.emptyDecoder(Country.class);
+
+    /** Transport network identifier.  */
+    private final ValueDecoder<NetworkCode> network = ValueDecoder.emptyDecoder(NetworkCode.class);
+
+    /** Identifier of the organization that acquired the card. */
     private int issuer;
+
+    /** Alternative identifier to the application's serial number for transportation. */
     private int application;
+
+    /** Start date of the transport card application */
     private CompactDate issuingDate;
+
+    /** Expiration date of the card transport application */
     private CompactDate endDate;
+
+    /** Cardholder's date of birth. */
     private LongDate holderBirthDate;
+
+    /** Entity or Organization to which the cardholder belongs */
     private int holderCompany;
+
+    /** Entity or Organization to which the cardholder belongs */
     private int holderId;
-    private final CardProperty<Profile> profile = CardProperty.emptyProperty(Profile.class);
+
+    /** Identifier of the profile associated with the cardholder */
+    private final ValueDecoder<Profile> profile = ValueDecoder.emptyDecoder(Profile.class);
+
+    /** Profile expiration date */
     private CompactDate prof1Date;
+
+    /** Profile expiration date */
     private CompactDate prof2Date;
+
+    /** Profile expiration date */
     private CompactDate prof3Date;
 
+    /** Padding bits */
     private int holderPadding;
 
+    /**
+     * Create an empty {@link Environment} file with {@link Environment#SFI_FILE} file id
+     */
     public Environment() {
-        super(null, Calypso.ENVIRONMENT_FILE);
+        super(null, SFI_FILE);
+    }
+
+    /**
+     * Verify if the {@link Environment#endDate} is not empty and is not expired
+     *
+     * @return {@code true} if {@link Environment#endDate} is not empty and is not expired,
+     * otherwise return {@code false}
+     */
+    public boolean isApplicationExpired() {
+        return !endDate.isEmpty() &&
+                LocalDate.now().isAfter(endDate.getDate());
     }
 
     @Override
@@ -114,4 +167,5 @@ public class Environment extends File<Environment> {
         setContent(HexUtil.toHex(data));
         return this;
     }
+
 }
