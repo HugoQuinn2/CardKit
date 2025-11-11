@@ -39,7 +39,6 @@ public abstract class Reader<E> {
             transactionResult.setTransactionName(transaction.getName());
             return transactionResult;
         } catch (CardKitException aborted) {
-            log.warn("{}: {}", transaction.getName(), aborted.getMessage());
             return TransactionResult.<T>builder()
                     .transactionStatus(TransactionStatus.ABORTED)
                     .transactionName(transaction.getName())
