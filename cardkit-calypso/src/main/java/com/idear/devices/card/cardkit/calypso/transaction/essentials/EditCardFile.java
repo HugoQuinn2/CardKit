@@ -66,7 +66,6 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
 
         reader.getCardTransactionManager()
                 .prepareOpenSecureSession(writeAccessLevel)
-                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
                 .prepareUpdateRecord(
                         file.getFileId(),
                         recordNumber,
