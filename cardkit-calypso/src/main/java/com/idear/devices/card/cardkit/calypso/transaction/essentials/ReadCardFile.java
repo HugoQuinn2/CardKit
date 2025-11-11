@@ -52,7 +52,7 @@ public class ReadCardFile extends Transaction<byte[], ReaderPCSC> {
      * @param record The record index to read from the file.
      */
     public ReadCardFile(WriteAccessLevel writeAccessLevel, byte fileId, int record) {
-        super("read file");
+        super("READ_FILE");
         this.writeAccessLevel = writeAccessLevel;
         this.fileId = fileId;
         this.record = record;
@@ -79,12 +79,16 @@ public class ReadCardFile extends Transaction<byte[], ReaderPCSC> {
     public TransactionResult<byte[]> execute(ReaderPCSC reader) {
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(writeAccessLevel)
-                .prepareReadRecord(fileId, record)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+        try {
+            reader.getCardTransactionManager()
+                    .prepareOpenSecureSession(writeAccessLevel)
+                    .prepareReadRecord(fileId, record)
+                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                    .prepareCloseSecureSession()
+                    .processCommands(ChannelControl.KEEP_OPEN);
+        } catch (Exception e) {
+            throw new CardException(e.getMessage());
+        }
 
         ElementaryFile elementaryFile = calypsoCard.getFileBySfi(fileId);
 
