@@ -8,9 +8,12 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import lombok.Getter;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 import java.util.SortedMap;
 
@@ -51,7 +54,7 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
      * @param bytesToRead The number of bytes to read from each record.
      */
     public ReadCardFilePartially(byte fileId, byte fromRecord, byte toRecord, int offset, int bytesToRead) {
-        super("files parity");
+        super("READ_FILE_PARTIALLY");
         this.fileId = fileId;
         this.fromRecord = fromRecord;
         this.toRecord = toRecord;
@@ -84,14 +87,21 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
 
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
-        reader.getCardTransactionManager()
-                .prepareReadRecordsPartially(
-                        fileId,
-                        fromRecord,
-                        toRecord,
-                        offset,
-                        bytesToRead)
-                .processCommands(ChannelControl.KEEP_OPEN);
+        try {
+            reader.getCardTransactionManager()
+                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                    .prepareReadRecordsPartially(
+                            fileId,
+                            fromRecord,
+                            toRecord,
+                            offset,
+                            bytesToRead)
+                    .prepareCloseSecureSession()
+                    .processCommands(ChannelControl.KEEP_OPEN);
+        } catch (Exception e) {
+            throw new CardException(e.getMessage());
+        }
 
         SortedMap<Integer, byte[]> sortedMap = calypsoCard.getFileBySfi(fileId)
                 .getData()
