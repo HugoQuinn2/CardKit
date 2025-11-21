@@ -1,9 +1,9 @@
 package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
-import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
-import com.idear.devices.card.cardkit.calypso.file.DebitLog;
-import com.idear.devices.card.cardkit.calypso.file.LoadLog;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.DebitLog;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.LoadLog;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;

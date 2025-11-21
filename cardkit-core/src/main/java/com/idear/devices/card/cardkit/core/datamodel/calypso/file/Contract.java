@@ -1,7 +1,8 @@
-package com.idear.devices.card.cardkit.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;

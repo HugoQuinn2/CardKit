@@ -1,10 +1,10 @@
 package com.idear.devices.card.cardkit.calypso.transaction;
 
-import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
-import com.idear.devices.card.cardkit.calypso.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;

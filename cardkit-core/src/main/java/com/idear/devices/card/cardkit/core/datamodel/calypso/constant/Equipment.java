@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.constant;
 
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import lombok.Getter;

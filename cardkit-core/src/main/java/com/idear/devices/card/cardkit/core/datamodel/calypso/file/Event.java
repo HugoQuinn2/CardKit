@@ -1,6 +1,10 @@
-package com.idear.devices.card.cardkit.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.NetworkCode;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Version;
 import com.idear.devices.card.cardkit.core.datamodel.date.DateTimeReal;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;

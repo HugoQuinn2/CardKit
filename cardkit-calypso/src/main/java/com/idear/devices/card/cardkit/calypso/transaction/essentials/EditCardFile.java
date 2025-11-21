@@ -1,6 +1,6 @@
 package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
-import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
@@ -10,8 +10,6 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
-import org.eclipse.keypop.calypso.card.transaction.SvAction;
-import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 /**
  * Represents a secure transaction to modify a specific record in a Calypso card file.

@@ -1,11 +1,11 @@
 package readers;
 
-import com.idear.devices.card.cardkit.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.file.Environment;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Profile;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Environment;
 import com.idear.devices.card.cardkit.calypso.transaction.*;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
-import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.CalypsoSam;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;

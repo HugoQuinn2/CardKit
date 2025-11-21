@@ -2,7 +2,7 @@ package com.idear.devices.card.cardkit.core.datamodel.location;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Equipment;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Equipment;
 import com.idear.devices.card.cardkit.core.io.Item;
 import lombok.AllArgsConstructor;
 import lombok.Data;

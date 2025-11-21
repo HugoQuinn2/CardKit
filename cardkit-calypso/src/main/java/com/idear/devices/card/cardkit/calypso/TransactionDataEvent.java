@@ -1,11 +1,11 @@
 package com.idear.devices.card.cardkit.calypso;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.idear.devices.card.cardkit.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.file.DebitLog;
-import com.idear.devices.card.cardkit.calypso.file.Event;
-import com.idear.devices.card.cardkit.calypso.file.LoadLog;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Profile;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.DebitLog;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.LoadLog;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Profile;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.io.Item;
 import lombok.Builder;

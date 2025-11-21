@@ -2,6 +2,7 @@ package com.idear.devices.card.cardkit.calypso.transaction.essentials;
 
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.transaction.RenewedCard;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -54,7 +55,7 @@ public class AppendEditCardFile extends Transaction<Boolean, ReaderPCSC> {
 
     /**
      * Creates a new append/edit transaction for the given
-     * {@link com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX} card file.
+     * {@link CalypsoCardCDMX} card file.
      *
      * @param file the file instance containing the records or data segment to be written
      */

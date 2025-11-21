@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.io.card.file.File;

@@ -1,8 +1,8 @@
-package com.idear.devices.card.cardkit.calypso;
+package com.idear.devices.card.cardkit.core.datamodel.calypso;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoProduct;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.CalypsoProduct;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
 import com.idear.devices.card.cardkit.core.io.card.Card;
-import com.idear.devices.card.cardkit.calypso.file.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

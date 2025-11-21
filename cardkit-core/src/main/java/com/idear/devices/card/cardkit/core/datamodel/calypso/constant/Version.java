@@ -1,27 +1,27 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.constant;
 
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import lombok.Getter;
 
 @Getter
-public enum NetworkCode implements IDataModel {
+public enum Version implements IDataModel {
 
-    CDMX(0x01),
-    PUEBAL(0x02),
+    VERSION_3_3(0x01),
     RFU(-1);
 
     private final int value;
 
-    NetworkCode(int value) {
+    Version(int value) {
         this.value = value;
     }
 
-    public static NetworkCode decode(int value) {
-        for (NetworkCode v : values()) {
+    public static Version decode(int value) {
+        for (Version v : values()) {
             if (v.value == value) {
                 return v;
             }
         }
         return RFU;
     }
+
 }

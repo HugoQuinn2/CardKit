@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
 import java.util.*;
 import java.util.function.Predicate;

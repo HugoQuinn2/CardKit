@@ -1,8 +1,8 @@
 package com.idear.devices.card.cardkit.calypso;
 
 import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.SamType;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.SamType;
 import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.sam.Sam;
 import com.idear.devices.card.cardkit.core.utils.Assert;

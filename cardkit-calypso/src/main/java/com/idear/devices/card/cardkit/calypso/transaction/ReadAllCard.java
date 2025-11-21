@@ -1,14 +1,14 @@
 package com.idear.devices.card.cardkit.calypso.transaction;
 
-import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
-import com.idear.devices.card.cardkit.calypso.file.*;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardData;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFile;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFilePartially;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoProduct;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.CalypsoProduct;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
