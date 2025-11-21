@@ -20,7 +20,6 @@ import org.eclipse.keyple.core.util.HexUtil;
 @AllArgsConstructor
 public abstract class File<T extends File<T>> extends Item {
 
-    @JsonIgnore
     private String content;
 
     @JsonIgnore

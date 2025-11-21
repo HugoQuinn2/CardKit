@@ -5,7 +5,6 @@ import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
@@ -14,10 +13,6 @@ import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
-import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
-import org.eclipse.keypop.calypso.card.transaction.SvAction;
-import org.eclipse.keypop.calypso.card.transaction.SvOperation;
-import sun.nio.ch.Net;
 
 /**
  * Represents a transaction that verifies whether a Calypso card contract is about to expire
@@ -147,9 +142,9 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
         reader.execute(
                 new SaveEvent(
                         calypsoCardCDMX,
-                        TransactionType.SV_CONTRACT_RENEWAL,
-                        calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
-                        provider,
+                        TransactionType.SV_CONTRACT_RENEWAL.getValue(),
+                        calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
+                        provider.getValue(),
                         locationId,
                         contract,
                         0,

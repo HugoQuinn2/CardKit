@@ -1,5 +1,7 @@
 package readers;
 
+import com.idear.devices.card.cardkit.calypso.file.Contract;
+import com.idear.devices.card.cardkit.calypso.file.Environment;
 import com.idear.devices.card.cardkit.calypso.transaction.*;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
@@ -8,8 +10,10 @@ import com.idear.devices.card.cardkit.calypso.CalypsoSam;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.card.cardProperty.CardProperty;
+import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.reader.CardReaderEvent;
 import org.junit.jupiter.api.Test;
 
@@ -34,18 +38,23 @@ public class ACS {
                             new ReadAllCard())
                     .throwMessageOnError(CardException.class)
                     .throwMessageOnAborted(CardException.class)
-                    .print()
                     .getData();
 
-            calypsoCardCDMX.getEnvironment().unparse();
-            calypsoCardCDMX.getEnvironment().getProfile().setValueByModel(Profile.GENERAL);
+            calypsoCardCDMX.getEnvironment().getProfile().setValue(Profile.GENERAL);
 
             reader.execute(
                     new EditCardFile(
                             calypsoCardCDMX.getEnvironment(),
                             1,
-                            WriteAccessLevel.DEBIT))
+                            WriteAccessLevel.PERSONALIZATION))
                     .print();
+
+            reader.execute(
+                            new ReadAllCard())
+                    .throwMessageOnError(CardException.class)
+                    .throwMessageOnAborted(CardException.class)
+                    .print()
+                    .getData();
         });
 
         safeWait(-1);
@@ -69,12 +78,26 @@ public class ACS {
                     .print()
                     .getData();
 
-//            reader.execute(new ReloadCard(
+            Environment environment = new Environment()
+                    .parse(HexUtil.toByteArray("1484015A00000000275A2F1500000000000000000002F1500000000000"));
+
+            reader.getCalypsoSam().
+
+            reader.getCardTransactionManager()
+                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                    .prepareWriteBinary(
+                            environment.getFileId(),
+                            0,
+                            environment.unparse())
+                    .prepareCloseSecureSession()
+                    .processCommands(ChannelControl.KEEP_OPEN);
+
+//            reader.execute(new DebitCard(
 //                    calypsoCardCDMX,
 //                    Provider.CABLEBUS,
 //                    locationCode,
-//                    10_000
-//            )).print();
+//                    1_000
+//            ));
         });
 
         safeWait(-1);
@@ -82,7 +105,7 @@ public class ACS {
 
     @Test
     public void property() {
-        System.out.println(CardProperty.fromHexStringValue("CONTRALOR", Profile.class));
+        System.out.println(ValueDecoder.fromHexStringValue("CONTRALOR", Profile.class));
     }
 
 

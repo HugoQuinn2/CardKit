@@ -3,7 +3,7 @@ package com.idear.devices.card.cardkit.calypso.file;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.DateTimeReal;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
-import com.idear.devices.card.cardkit.core.io.card.cardProperty.CardProperty;
+import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
@@ -17,15 +17,15 @@ public class Event extends File<Event> {
 
     private int id;
 
-    private final CardProperty<Version> version = CardProperty.emptyProperty(Version.class);
+    private final ValueDecoder<Version> version = ValueDecoder.emptyDecoder(Version.class);
     private int transactionNumber;
-    private final CardProperty<TransactionType> transactionType = CardProperty.emptyProperty(TransactionType.class);
-    private final CardProperty<NetworkCode> networkId = CardProperty.emptyProperty(NetworkCode.class);
-    private final CardProperty<Provider> provider = CardProperty.emptyProperty(Provider.class);
+    private final ValueDecoder<TransactionType> transactionType = ValueDecoder.emptyDecoder(TransactionType.class);
+    private final ValueDecoder<NetworkCode> networkId = ValueDecoder.emptyDecoder(NetworkCode.class);
+    private final ValueDecoder<Provider> provider = ValueDecoder.emptyDecoder(Provider.class);
     private final LocationCode locationId = LocationCode.emptyLocationCode();
     private DateTimeReal dateTimeStamp;
     private int amount;
-    private final CardProperty<Provider> firstServiceProvider = CardProperty.emptyProperty(Provider.class);
+    private final ValueDecoder<Provider> firstServiceProvider = ValueDecoder.emptyDecoder(Provider.class);
     private final LocationCode firstLocationId = LocationCode.emptyLocationCode();
     private DateTimeReal firstDateTimeStamp;
     private int firstPassenger;
@@ -99,7 +99,7 @@ public class Event extends File<Event> {
         event.getLocationId().setValue(locationId);
         event.setAmount(amount);
 
-        event.getVersion().setValueByModel(Version.VERSION_3_3);
+        event.getVersion().setValue(Version.VERSION_3_3);
         event.getProvider().setValue(provider);
         event.setDateTimeStamp(DateTimeReal.now());
         event.setFirstDateTimeStamp(DateTimeReal.now());

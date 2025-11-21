@@ -4,8 +4,6 @@ import com.idear.devices.card.cardkit.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
 import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.ContractStatus;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.NetworkCode;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.TransactionType;
@@ -13,7 +11,6 @@ import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
@@ -126,9 +123,9 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
         reader.execute(
                 new SaveEvent(
                         calypsoCardCDMX,
-                        TransactionType.RELOAD,
-                        calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
-                        provider,
+                        TransactionType.RELOAD.getValue(),
+                        calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+                        provider.getValue(),
                         locationId,
                         contract,
                         passenger,

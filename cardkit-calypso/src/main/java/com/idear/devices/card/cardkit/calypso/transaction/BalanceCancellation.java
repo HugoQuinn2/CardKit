@@ -11,7 +11,6 @@ import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
@@ -131,9 +130,9 @@ public class BalanceCancellation extends Transaction<Boolean, ReaderPCSC> {
 
         reader.execute(new SaveEvent(
                 calypsoCardCDMX,
-                transactionType,
-                calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
-                provider,
+                transactionType.getValue(),
+                calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
+                provider.getValue(),
                 locationId,
                 contract,
                 0,

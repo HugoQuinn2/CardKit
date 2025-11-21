@@ -68,9 +68,9 @@ public class InvalidateCard extends Transaction<Boolean, ReaderPCSC> {
         reader.execute(
                 new SaveEvent(
                         calypsoCardCDMX,
-                        transactionType,
-                        calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
-                        provider,
+                        transactionType.getValue(),
+                        calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
+                        provider.getValue(),
                         locationId,
                         contract,
                         0,

@@ -9,6 +9,7 @@ import com.idear.devices.card.cardkit.calypso.file.Contract;
 import com.idear.devices.card.cardkit.calypso.file.DebitLog;
 import com.idear.devices.card.cardkit.calypso.file.Event;
 import com.idear.devices.card.cardkit.calypso.file.LoadLog;
+import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.DateTimeReal;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
@@ -68,15 +69,15 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
     private final CalypsoCardCDMX calypsoCardCDMX;
 
     /** The type of transaction being executed (e.g., RELOAD, GENERAL_DEBIT, etc.). */
-    private final TransactionType transactionType;
+    private final ValueDecoder<TransactionType> transactionType = ValueDecoder.emptyDecoder(TransactionType.class);
 
     /** The sequential transaction number associated with this event. */
     private final int transactionNumber;
 
     /** The contract file associated with the transaction. */
     private final Contract contract;
-    private final NetworkCode networkCode;
-    private final Provider provider;
+    private final int networkCode;
+    private final ValueDecoder<Provider> provider = ValueDecoder.emptyDecoder(Provider.class);
 
     /** The passenger identifier related to the event. */
     private final int passenger;
@@ -102,9 +103,9 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
      */
     public SaveEvent(
             CalypsoCardCDMX calypsoCardCDMX,
-            TransactionType transactionType,
-            NetworkCode networkCode,
-            Provider provider,
+            int transactionType,
+            int networkCode,
+            int provider,
             LocationCode locationId,
             Contract contract,
             int passenger,
@@ -112,14 +113,14 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
             int amount) {
         super("SAVE_EVENT");
         this.calypsoCardCDMX = calypsoCardCDMX;
-        this.transactionType = transactionType;
+        this.transactionType.setValue(transactionType);
         this.passenger = passenger;
         this.locationId = locationId;
         this.amount = amount;
         this.transactionNumber = transactionNumber;
         this.contract = contract;
         this.networkCode = networkCode;
-        this.provider = provider;
+        this.provider.setValue(provider);
     }
 
     /**
@@ -143,10 +144,12 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
         if (!reader.isCardOnReader())
             throw new ReaderException("no card on reader");
 
+        TransactionType type = transactionType.decode(TransactionType.RFU);
+
         // Build the event data
         Event event = Event.builEvent(
                 transactionType.getValue(),
-                networkCode.getValue(),
+                networkCode,
                 provider.getValue(),
                 contract.getId(),
                 passenger,
@@ -156,16 +159,16 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
         );
 
         // Trigger the event on the reader if the transaction is reportable
-        if (transactionType.isReported()) {
+        if (type.isReported()) {
             String mac;
-            if (transactionType.isSigned())
+            if (type.isSigned())
                 mac = computeTransactionSignature(
                         reader,
                         transactionType.getValue(),
                         DateTimeReal.now().getValue(),
                         amount,
                         locationId.getValue(),
-                        0,
+                        calypsoCardCDMX.getCalypsoProduct().getValue(),
                         calypsoCardCDMX.getSerial(),
                         calypsoCardCDMX.getBalance(),
                         provider.getValue()
@@ -199,7 +202,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
         }
 
         // Write the event to the card if required
-        if (transactionType.isWritten()) {
+        if (type.isWritten()) {
             reader.getCardTransactionManager()
                     .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                     .prepareAppendRecord(event.getFileId(), event.unparse())
@@ -211,9 +214,9 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
                 .transactionStatus(TransactionStatus.OK)
                 .data(true)
                 .message(String.format("event %s successfully save, reported: %s, written: %s",
-                        transactionType,
-                        transactionType.isReported(),
-                        transactionType.isWritten()))
+                        type,
+                        type.isReported(),
+                        type.isWritten()))
                 .build();
     }
 

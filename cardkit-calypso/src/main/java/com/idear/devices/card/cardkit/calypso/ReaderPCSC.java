@@ -1,11 +1,7 @@
 package com.idear.devices.card.cardkit.calypso;
 
-import com.idear.devices.card.cardkit.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.file.Event;
-import com.idear.devices.card.cardkit.calypso.transaction.InvalidateCard;
-import com.idear.devices.card.cardkit.calypso.transaction.ReadAllCard;
+import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.reader.Reader;
-import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.utils.Assert;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +16,6 @@ import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
 import org.eclipse.keypop.calypso.card.transaction.*;
 import org.eclipse.keypop.reader.*;
 import org.eclipse.keypop.reader.selection.CardSelectionManager;
-import org.eclipse.keypop.reader.selection.InvalidCardResponseException;
 import org.eclipse.keypop.reader.selection.spi.SmartCard;
 import org.eclipse.keypop.reader.spi.CardReaderObservationExceptionHandlerSpi;
 import org.eclipse.keypop.reader.spi.CardReaderObserverSpi;
@@ -138,20 +133,12 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     public void updateCalypsoCardSession() {
         SmartCard smartCard;
 
-        try {
-            smartCard = cardSelectionManager
-                    .processCardSelectionScenario(cardReader)
-                    .getActiveSmartCard();
-        } catch (InvalidCardResponseException ex) {
-            return;
-        } catch (ReaderCommunicationException | CardCommunicationException ex) {
-            return;
-        }
+        smartCard = cardSelectionManager
+                .processCardSelectionScenario(cardReader)
+                .getActiveSmartCard();
 
-        // Card selection didn't match
-        if (smartCard == null) {
-            return;
-        }
+        if (smartCard == null)
+            throw new ReaderException("Card selection didn't match");
 
         calypsoCard = (CalypsoCard) smartCard;
     }

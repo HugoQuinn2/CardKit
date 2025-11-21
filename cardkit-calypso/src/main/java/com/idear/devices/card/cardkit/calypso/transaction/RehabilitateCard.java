@@ -26,7 +26,7 @@ public class RehabilitateCard extends Transaction<Boolean, ReaderPCSC> {
             throw new CardException("card already rehabilitate");
 
         reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                .prepareOpenSecureSession(WriteAccessLevel.PERSONALIZATION)
                 .prepareRehabilitate()
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);

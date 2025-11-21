@@ -33,12 +33,21 @@ public class ValueDecoder<E extends Enum<E> & IDataModel> implements IDataModel 
     private int defaultValue;
 
     /**
+     * Sets the value of this property.
+     *
+     * @param value the data whose value will be copied
+     */
+    public void setValue(int value) {
+        this.value = value;
+    }
+
+    /**
      * Sets the value of this property using another {@link IDataModel} instance.
      *
      * @param iDataModel the data model whose value will be copied
      */
-    public void setValueByModel(E iDataModel) {
-        this.value = iDataModel.getValue();
+    public void setValue(E iDataModel) {
+        setValue(iDataModel.getValue());
     }
 
     /**

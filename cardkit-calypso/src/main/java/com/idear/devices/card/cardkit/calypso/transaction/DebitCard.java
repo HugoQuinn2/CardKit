@@ -161,7 +161,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * @throws CardException if the passback time is too short.
      */
     private void validatePassback(LocalDateTime now, LocalDateTime lastDebitDateTime) {
-        int passBackDuration = calypsoCardCDMX.getEnvironment().getProfile().decodeOrElse(Profile.RFU).getPassBack();
+        int passBackDuration = calypsoCardCDMX.getEnvironment().getProfile().decode(Profile.RFU).getPassBack();
         Duration passBack = Duration.ofMinutes(passBackDuration);
 
         if (Duration.between(lastDebitDateTime, now).compareTo(passBack) < 0) {
@@ -180,7 +180,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * @throws CardException if the profile is not allowed on the equipment.
      */
     private void validateProfileOnEquipment(Equipment equipment) {
-        if (!calypsoCardCDMX.getEnvironment().getProfile().decodeOrElse(Profile.RFU).isAllowedOn(equipment)) {
+        if (!calypsoCardCDMX.getEnvironment().getProfile().decode(Profile.RFU).isAllowedOn(equipment)) {
             throw new CardException("profile %s is not allowed on this device [%s]",
                     calypsoCardCDMX.getEnvironment().getProfile(),
                     equipment);
@@ -251,9 +251,9 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
     private void recordEvent(ReaderPCSC reader, TransactionType transactionType, int finalAmount) {
         reader.execute(new SaveEvent(
                 calypsoCardCDMX,
-                transactionType,
-                calypsoCardCDMX.getEnvironment().getNetwork().decodeOrElse(NetworkCode.RFU),
-                provider,
+                transactionType.getValue(),
+                calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
+                provider.getValue(),
                 locationId,
                 contract,
                 passenger,

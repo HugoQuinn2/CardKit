@@ -7,9 +7,8 @@ import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardDat
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFile;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFilePartially;
 import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Product;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoProduct;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Profile;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -119,22 +118,14 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
         reader.setCardTransactionManager(cardTransactionManager);
 
-        // Perform a DEBIT SV get operation to update the balance
-        cardTransactionManager
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
-
-        // Store the card balance
-        calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
-        calypsoCardCDMX.setProduct(parseProduct(calypsoCard));
-
-        readLogFiles(reader);
+        readLogFiles(reader, cardTransactionManager, calypsoCard);
         readEnvironmentFile(reader);
         readEventFiles(reader);
         readContractFiles(reader);
 
+        calypsoCardCDMX.setCalypsoProduct(CalypsoProduct.parseByCalypsoCard(calypsoCard));
+
+//        cardTransactionManager.processCommands(ChannelControl.CLOSE_AFTER);
         return TransactionResult
                 .<CalypsoCardCDMX>builder()
                 .transactionStatus(TransactionStatus.OK)
@@ -143,19 +134,34 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
                 .build();
     }
 
-    private void readLogFiles(ReaderPCSC reader) {
-        SvDebitLogRecord debitLogRecord = reader.getCalypsoCard().getSvDebitLogLastRecord();
-        if (debitLogRecord != null) {
-            calypsoCardCDMX.setDebitLog(new DebitLog().parse(debitLogRecord));
-        } else {
-            log.warn("failed to read debit log record");
-        }
+    private void readLogFiles(
+            ReaderPCSC reader,
+            SecureRegularModeTransactionManager cardTransactionManager,
+            CalypsoCard calypsoCard) {
+        try {
+            cardTransactionManager
+                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                    .prepareCloseSecureSession()
+                    .processCommands(ChannelControl.KEEP_OPEN);
 
-        SvLoadLogRecord loadLogRecord = reader.getCalypsoCard().getSvLoadLogRecord();
-        if (loadLogRecord != null) {
-            calypsoCardCDMX.setLoadLog(new LoadLog().parse(loadLogRecord));
-        } else {
-            log.warn("failed to read load log record");
+            SvDebitLogRecord debitLogRecord = reader.getCalypsoCard().getSvDebitLogLastRecord();
+            if (debitLogRecord != null) {
+                calypsoCardCDMX.setDebitLog(new DebitLog().parse(debitLogRecord));
+            } else {
+                log.debug("failed to read debit log record");
+            }
+
+            SvLoadLogRecord loadLogRecord = reader.getCalypsoCard().getSvLoadLogRecord();
+            if (loadLogRecord != null) {
+                calypsoCardCDMX.setLoadLog(new LoadLog().parse(loadLogRecord));
+            } else {
+                log.debug("failed to read load log record");
+            }
+
+            calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
+        } catch (Exception e) {
+            log.debug("Error reading logs files");
         }
     }
 
@@ -167,7 +173,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         if (readFile.isOk()) {
             calypsoCardCDMX.setEnvironment(new Environment().parse(readFile.getData()));
         } else {
-            log.warn("failed to read environment file: {}", readFile.getMessage());
+            log.debug("failed to read environment file: {}", readFile.getMessage());
         }
     }
 
@@ -177,7 +183,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         );
 
         if (!readFiles.isOk()) {
-            log.warn("Failed to read events file: {}", readFiles.getMessage());
+            log.debug("Failed to read events file: {}", readFiles.getMessage());
             return;
         }
 
@@ -195,7 +201,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         );
 
         if (!readFiles.isOk()) {
-            log.warn("Failed to read contracts file: {}", readFiles.getMessage());
+            log.debug("Failed to read contracts file: {}", readFiles.getMessage());
             return;
         }
 
@@ -210,22 +216,4 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         calypsoCardCDMX.setContracts(contracts);
     }
 
-    private Product parseProduct(CalypsoCard calypsoCard) {
-        if (calypsoCard.isHce())
-            return Product.CALYPSO_HCE;
-
-        switch (calypsoCard.getProductType()) {
-            case PRIME_REVISION_1:
-            case PRIME_REVISION_2:
-            case PRIME_REVISION_3:
-                return Product.CALYPSO_PRIME;
-            case LIGHT:
-                return Product.CALYPSO_LIGHT;
-            case BASIC:
-                return Product.CALYPSO_BASIC;
-            case UNKNOWN:
-            default:
-                return Product.RFU;
-        }
-    }
 }
