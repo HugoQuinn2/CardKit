@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.calypso;
 
+import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.SamType;
 import com.idear.devices.card.cardkit.core.exception.SamException;
@@ -53,11 +54,11 @@ public class CalypsoSam extends Sam {
     public static final int RECORD_SIZE = 29;
 
     private int samEnableBits;
-    private SamType samType;
+    private final ValueDecoder<SamType> samType = ValueDecoder.emptyDecoder(SamType.class);
     private int samNetworkReference;
     private int samVersion;
     private int samNetworkCode;
-    private Provider samProviderCode;
+    private final ValueDecoder<Provider> samProviderCode = ValueDecoder.emptyDecoder(Provider.class);
 
     private void parse(byte [] data) {
         if (data == null)
@@ -73,11 +74,11 @@ public class CalypsoSam extends Sam {
         }
 
         setSamEnableBits(ByteUtils.extractInt(data, 0, 2, false));
-        setSamType(SamType.decode(data[0x0B] & 0xff));
+        samType.setValue(data[0x0B] & 0xff);
+        samProviderCode.setValue(data[0x0F] & 0xff);
         setSamNetworkReference(data[0x0C] & 0xff);
         setSamVersion(data[0x0D] & 0xff);
         setSamNetworkCode(data[0x0E] & 0xff);
-        setSamProviderCode(Provider.decode(data[0x0F] & 0xff));
     }
 
     @Override
