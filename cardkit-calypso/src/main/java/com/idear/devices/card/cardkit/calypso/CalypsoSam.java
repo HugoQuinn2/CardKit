@@ -19,6 +19,7 @@ import org.eclipse.keyple.core.service.SmartCardServiceProvider;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.crypto.legacysam.transaction.FreeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.SymmetricCryptoSecuritySetting;
 import org.eclipse.keypop.calypso.card.transaction.spi.SymmetricCryptoCardTransactionManagerFactory;
 import org.eclipse.keypop.calypso.crypto.legacysam.LegacySamApiFactory;
@@ -49,6 +50,7 @@ public class CalypsoSam extends Sam {
     private CardTransactionManager genericSamTransactionManager;
     @ToString.Exclude
     private SymmetricCryptoSecuritySetting symmetricCryptoSettingsRT;
+    private FreeTransactionManager freeTransactionManager;
 
     // Sam data params
     public static final int RECORD_SIZE = 29;
@@ -59,6 +61,9 @@ public class CalypsoSam extends Sam {
     private int samVersion;
     private int samNetworkCode;
     private final ValueDecoder<Provider> samProviderCode = ValueDecoder.emptyDecoder(Provider.class);
+
+    public static final LegacySamExtensionService legacySamExtensionService = LegacySamExtensionService.getInstance();
+    private static final LegacySamApiFactory legacySamApiFactory = legacySamExtensionService.getLegacySamApiFactory();
 
     private void parse(byte [] data) {
         if (data == null)
@@ -137,8 +142,10 @@ public class CalypsoSam extends Sam {
         if (sam == null)
             throw new SamException("No Calypso SAM in reader %s.", samReader.getName());
 
-        byte[] dataout = GenericExtensionService.getInstance()
-                .createCardTransaction(samReader, sam)
+        genericSamTransactionManager = GenericExtensionService.getInstance()
+                .createCardTransaction(samReader, sam);
+
+        byte[] dataout = genericSamTransactionManager
                 .prepareApdu("80BE00A030") // SAM Read Parameters APDU
                 .processApdusToByteArrays(ChannelControl.KEEP_OPEN).get(0);
 
@@ -160,10 +167,7 @@ public class CalypsoSam extends Sam {
                 .assignDefaultKif(WriteAccessLevel.LOAD, (byte) 0x27)
                 .assignDefaultKif(WriteAccessLevel.DEBIT, (byte) 0x30);
 
-        // Create Generic SAM transaction manager
-        genericSamTransactionManager = GenericExtensionService.getInstance()
-                .createCardTransaction(samReader, sam);
-
+        freeTransactionManager = legacySamApiFactory.createFreeTransactionManager(samReader, sam);
         return sam;
     }
 
