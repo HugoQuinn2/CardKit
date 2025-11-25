@@ -14,6 +14,7 @@ import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
 import org.eclipse.keypop.calypso.card.transaction.*;
+import org.eclipse.keypop.calypso.card.transaction.FreeTransactionManager;
 import org.eclipse.keypop.reader.*;
 import org.eclipse.keypop.reader.selection.CardSelectionManager;
 import org.eclipse.keypop.reader.selection.spi.SmartCard;
@@ -63,6 +64,7 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     /** Manager responsible for Calypso secure regular transactions. */
     @ToString.Exclude
     private SecureRegularModeTransactionManager cardTransactionManager;
+    private FreeTransactionManager freeTransactionManager;
     /** Manages card selection and filtering based on AIDs. */
     @ToString.Exclude
     private CardSelectionManager cardSelectionManager;
@@ -141,6 +143,20 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
             throw new ReaderException("Card selection didn't match");
 
         calypsoCard = (CalypsoCard) smartCard;
+
+        if (freeTransactionManager != null)
+            freeTransactionManager.processCommands(ChannelControl.CLOSE_AFTER);
+
+        freeTransactionManager = calypsoCardApiFactory.createFreeTransactionManager(cardReader, calypsoCard);
+
+        if (cardTransactionManager != null)
+            cardTransactionManager.processCommands(ChannelControl.CLOSE_AFTER);
+
+        cardTransactionManager = calypsoCardApiFactory.createSecureRegularModeTransactionManager(
+                cardReader,
+                calypsoCard,
+                calypsoSam.getSymmetricCryptoSettingsRT()
+        );
     }
 
     /**
