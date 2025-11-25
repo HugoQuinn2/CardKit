@@ -15,7 +15,6 @@ import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
@@ -108,17 +107,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         if (reader.getCardTransactionManager() != null)
             reader.getCardTransactionManager().processCommands(ChannelControl.CLOSE_AFTER);
 
-        // Initialize the secure transaction manager for DEBIT operations
-        SecureRegularModeTransactionManager cardTransactionManager =
-                ReaderPCSC.calypsoCardApiFactory.createSecureRegularModeTransactionManager(
-                        reader.getCardReader(),
-                        calypsoCard,
-                        reader.getCalypsoSam().getSymmetricCryptoSettingsRT()
-                );
-
-        reader.setCardTransactionManager(cardTransactionManager);
-
-        readLogFiles(reader, cardTransactionManager, calypsoCard);
+        readLogFiles(reader, calypsoCard);
         readEnvironmentFile(reader);
         readEventFiles(reader);
         readContractFiles(reader);
@@ -136,10 +125,9 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
 
     private void readLogFiles(
             ReaderPCSC reader,
-            SecureRegularModeTransactionManager cardTransactionManager,
             CalypsoCard calypsoCard) {
         try {
-            cardTransactionManager
+            reader.getCardTransactionManager()
                     .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                     .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
                     .prepareCloseSecureSession()
