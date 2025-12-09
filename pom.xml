@@ -23,7 +23,7 @@
 
     <modules>
         <module>cardkit-core</module>
-        <module>cardkit-calypso</module>
+        <module>cardkit-keyple</module>
         <module>cardkit-test</module>
         <module>cardkit-example</module>
     </modules>
@@ -47,6 +47,13 @@
     </repositories>
 
     <dependencies>
+
+        <!-- JSerialComm -->
+        <dependency>
+            <groupId>com.fazecast</groupId>
+            <artifactId>jSerialComm</artifactId>
+            <version>2.11.0</version>
+        </dependency>
 
         <!-- Json -->
         <dependency>
@@ -165,7 +172,7 @@
 
             <dependency>
                 <groupId>com.idear.devices.card.cardkit</groupId>
-                <artifactId>cardkit-calypso</artifactId>
+                <artifactId>cardkit-keyple</artifactId>
                 <version>1.0.0</version>
             </dependency>
 

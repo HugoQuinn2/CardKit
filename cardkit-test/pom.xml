@@ -19,12 +19,12 @@
     <dependencies>
         <dependency>
             <groupId>com.idear.devices.card.cardkit</groupId>
-            <artifactId>cardkit-calypso</artifactId>
+            <artifactId>cardkit-keyple</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.idear.devices.card.cardkit</groupId>
-            <artifactId>cardkit-calypso</artifactId>
+            <artifactId>cardkit-keyple</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
