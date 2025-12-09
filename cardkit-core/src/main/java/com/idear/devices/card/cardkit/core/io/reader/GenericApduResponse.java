@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso;
+package com.idear.devices.card.cardkit.core.io.reader;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
