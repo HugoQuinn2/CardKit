@@ -174,4 +174,32 @@ public class Environment extends File<Environment> {
         return this;
     }
 
+    public static Environment buildEnvironment(
+            int network,
+            int profile) {
+        Environment env = new Environment();
+
+        env.getProfile().setValue(profile);
+        env.getNetwork().setValue(network);
+
+        env.getVersion().setValue(Version.VERSION_3_3);
+        env.getCountry().setValue(Country.MEXICO);
+
+        env.setIssuer(1);
+        env.setApplication(0);
+
+        env.setIssuingDate(CompactDate.now());
+        env.setEndDate(CompactDate.fromLocalDate(LocalDate.now().plusYears(5)));
+        env.setHolderBirthDate(LongDate.empty());
+
+        env.setHolderCompany(0);
+        env.setHolderId(0);
+
+        env.setProf1Date(CompactDate.empty());
+        env.setProf2Date(CompactDate.empty());
+        env.setProf3Date(CompactDate.empty());
+
+        return env;
+    }
+
 }
