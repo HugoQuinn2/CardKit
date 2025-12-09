@@ -45,8 +45,8 @@ public abstract class Reader<E> {
                     .message(aborted.getMessage())
                     .time(System.currentTimeMillis() - time)
                     .build();
-        } catch (Exception e) {
-            log.error("{}: {}", transaction.getName(), e.getMessage());
+        } catch (Throwable e) {
+            log.error("{}: {} - {}", transaction.getName(), e.getClass().getSimpleName(), e.getMessage());
             return TransactionResult.<T>builder()
                     .transactionStatus(TransactionStatus.ERROR)
                     .transactionName(transaction.getName())
