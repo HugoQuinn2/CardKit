@@ -125,4 +125,11 @@ public class LongDate extends Item implements IDataModel {
     public boolean isEmpty() {
         return value == 0;
     }
+
+    /**
+     * @return a {@link LongDate} with value 0
+     */
+    public static LongDate empty() {
+        return new LongDate(0);
+    }
 }

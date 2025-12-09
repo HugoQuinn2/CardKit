@@ -132,4 +132,11 @@ public class CompactDate extends Item implements IDataModel {
     public String toJsonValue() {
         return isEmpty() ? "" : date.toString();
     }
+
+    /**
+     * @return returns a {@link CompactDate} with value 0
+     */
+    public static CompactDate empty() {
+        return new CompactDate(0);
+    }
 }
