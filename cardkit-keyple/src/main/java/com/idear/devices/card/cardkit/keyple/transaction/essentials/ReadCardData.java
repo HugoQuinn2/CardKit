@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso.transaction.essentials;
+package com.idear.devices.card.cardkit.keyple.transaction.essentials;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
@@ -7,9 +7,10 @@ import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 
@@ -30,7 +31,7 @@ import java.util.SortedMap;
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
+public class ReadCardData extends Transaction<CalypsoCardCDMX, KeypleReader> {
 
     private final WriteAccessLevel writeAccessLevel;
 
@@ -57,7 +58,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
      * @return the data parsed
      */
     @Override
-    public TransactionResult<CalypsoCardCDMX> execute(ReaderPCSC reader) {
+    public TransactionResult<CalypsoCardCDMX> execute(KeypleReader reader) {
 
         if (!reader.getCardReader().isCardPresent())
             throw new ReaderException("no card on reader");
@@ -74,7 +75,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
                 .build();
     }
 
-    private void readEnvironmentFile(ReaderPCSC reader) {
+    private void readEnvironmentFile(KeypleReader reader) {
         readFile = reader.execute(
                 new ReadCardFile(writeAccessLevel, Calypso.ENVIRONMENT_FILE, 1)
         );
@@ -86,7 +87,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         }
     }
 
-    private void readEventFiles(ReaderPCSC reader) {
+    private void readEventFiles(KeypleReader reader) {
         readFiles = reader.execute(
                 new ReadCardFilePartially(Calypso.EVENT_FILE, (byte) 1, (byte) 3, 0, 29)
         );
@@ -104,7 +105,7 @@ public class ReadCardData extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         cdmxCard.setEvents(events);
     }
 
-    private void readContractFiles(ReaderPCSC reader) {
+    private void readContractFiles(KeypleReader reader) {
         readFiles = reader.execute(
                 new ReadCardFilePartially(Calypso.CONTRACT_FILE, (byte) 1, (byte) 8, 0, 10)
         );

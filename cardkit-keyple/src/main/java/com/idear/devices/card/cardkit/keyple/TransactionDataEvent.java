@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso;
+package com.idear.devices.card.cardkit.keyple;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;

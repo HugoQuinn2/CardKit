@@ -1,10 +1,10 @@
-package com.idear.devices.card.cardkit.calypso.transaction.essentials;
+package com.idear.devices.card.cardkit.keyple.transaction.essentials;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.GenericApduResponse;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
-import com.idear.devices.card.cardkit.calypso.TransactionDataEvent;
+import com.idear.devices.card.cardkit.core.io.reader.GenericApduResponse;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
@@ -65,7 +65,7 @@ import java.util.concurrent.Executors;
  * @since 1.0
  */
 @Getter
-public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
+public class SaveEvent extends Transaction<Boolean, KeypleReader> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
 
@@ -125,7 +125,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
     }
 
     /**
-     * Executes the event-saving process using the provided {@link ReaderPCSC}.
+     * Executes the event-saving process using the provided {@link KeypleReader}.
      * <p>
      * The method performs the following steps:
      * <ul>
@@ -141,7 +141,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
      * @throws ReaderException if no card is detected in the reader
      */
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
         if (!reader.isCardOnReader())
             throw new ReaderException("no card on reader");
 
@@ -221,18 +221,18 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
                 .build();
     }
 
-    private DebitLog readDebitLog(ReaderPCSC reader) {
+    private DebitLog readDebitLog(KeypleReader reader) {
         SvDebitLogRecord debitLogRecord = reader.getCalypsoCard().getSvDebitLogLastRecord();
         return new DebitLog().parse(debitLogRecord);
     }
 
-    private LoadLog readLoadLog(ReaderPCSC reader) {
+    private LoadLog readLoadLog(KeypleReader reader) {
         SvLoadLogRecord loadLogRecord = reader.getCalypsoCard().getSvLoadLogRecord();
         return new LoadLog().parse(loadLogRecord);
     }
 
     protected String computeTransactionSignature(
-            ReaderPCSC readerPCSC,
+            KeypleReader keypleReader,
             int eventType, int transactionTimestamp, int transactionAmount,
             int terminalLocation, int cardType, String cardSerialHex,
             int prevSvBalance, int svProvider) {
@@ -249,7 +249,7 @@ public class SaveEvent extends Transaction<Boolean, ReaderPCSC> {
         bit.setNextInteger(0, 24);
 
         GenericApduResponse response = digestMacCompute(
-                readerPCSC.getCalypsoSam().getGenericSamTransactionManager(),
+                keypleReader.getKeypleCalypsoSam().getGenericSamTransactionManager(),
                 (byte) 0xEB,
                 (byte) 0xC0,
                 bit.getData());

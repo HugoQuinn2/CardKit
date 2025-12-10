@@ -1,7 +1,7 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.calypso.CalypsoSam;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleCalypsoSam;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
@@ -20,7 +20,7 @@ import org.eclipse.keypop.calypso.crypto.legacysam.transaction.LegacyCardCertifi
 import java.time.LocalDate;
 
 @Slf4j
-public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
+public class PrePersonalization extends Transaction<Boolean, KeypleReader> {
 
     public enum KeyGenerated {
         CARD,
@@ -53,9 +53,9 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
     }
 
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
         CalypsoCard calypsoCard = reader.getCalypsoCard();
-        LegacySam legacySam = reader.getCalypsoSam().getLegacySam();
+        LegacySam legacySam = reader.getKeypleCalypsoSam().getLegacySam();
 
         log.info("Pre personalization card {} with {}, from {} to {}",
                 HexUtil.toHex(calypsoCard.getApplicationSerialNumber()),
@@ -64,8 +64,12 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
                 endDate);
 
         switch (keyGenerate) {
-            case CARD -> cardSamKeyPair(reader, startDate, endDate);
-            case LEGACY_SAM -> legacySamKeyPair(reader, startDate, endDate);
+            case CARD:
+                cardSamKeyPair(reader, startDate, endDate);
+            break;
+            case LEGACY_SAM:
+                legacySamKeyPair(reader, startDate, endDate);
+                break;
         }
 
         return TransactionResult.<Boolean>builder()
@@ -74,9 +78,9 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
                 .build();
     }
 
-    private void cardSamKeyPair(ReaderPCSC reader, LocalDate startDate, LocalDate endDate) {
+    private void cardSamKeyPair(KeypleReader reader, LocalDate startDate, LocalDate endDate) {
         CalypsoCard calypsoCard = reader.getCalypsoCard();
-        LegacySam legacySam = reader.getCalypsoSam().getLegacySam();
+        LegacySam legacySam = reader.getKeypleCalypsoSam().getLegacySam();
 
         try {
             reader.getFreeTransactionManager()
@@ -88,7 +92,7 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
         }
 
         LegacyCardCertificateComputationData cardCertificateComputationData =
-                CalypsoSam.legacySamExtensionService.getLegacySamApiFactory()
+                KeypleCalypsoSam.legacySamExtensionService.getLegacySamApiFactory()
                         .createLegacyCardCertificateComputationData()
                         .setCardAid(calypsoCard.getDfName())
                         .setCardSerialNumber(calypsoCard.getApplicationSerialNumber())
@@ -97,7 +101,7 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
                         .setCardStartupInfo(calypsoCard.getStartupInfoRawData());
 
         try {
-            reader.getCalypsoSam().getFreeTransactionManager()
+            reader.getKeypleCalypsoSam().getFreeTransactionManager()
                     .prepareGetData(GetDataTag.CA_CERTIFICATE)
                     .prepareComputeCardCertificate(cardCertificateComputationData)
                     .processCommands();
@@ -116,13 +120,13 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
 
     }
 
-    private void legacySamKeyPair(ReaderPCSC reader, LocalDate startDate, LocalDate endDate) {
-        KeyPairContainer keyPairContainer = CalypsoSam.legacySamExtensionService.getLegacySamApiFactory().createKeyPairContainer();
+    private void legacySamKeyPair(KeypleReader reader, LocalDate startDate, LocalDate endDate) {
+        KeyPairContainer keyPairContainer = KeypleCalypsoSam.legacySamExtensionService.getLegacySamApiFactory().createKeyPairContainer();
         CalypsoCard calypsoCard = reader.getCalypsoCard();
-        LegacySam legacySam = reader.getCalypsoSam().getLegacySam();
+        LegacySam legacySam = reader.getKeypleCalypsoSam().getLegacySam();
 
         LegacyCardCertificateComputationData cardCertificateComputationData =
-                CalypsoSam.legacySamExtensionService.getLegacySamApiFactory()
+                KeypleCalypsoSam.legacySamExtensionService.getLegacySamApiFactory()
                         .createLegacyCardCertificateComputationData()
                         .setCardAid(calypsoCard.getDfName())
                         .setCardSerialNumber(calypsoCard.getApplicationSerialNumber())
@@ -131,7 +135,7 @@ public class PrePersonalization extends Transaction<Boolean, ReaderPCSC> {
                         .setCardStartupInfo(calypsoCard.getStartupInfoRawData());
 
         try {
-            reader.getCalypsoSam().getFreeTransactionManager()
+            reader.getKeypleCalypsoSam().getFreeTransactionManager()
                     .prepareGetData(GetDataTag.CA_CERTIFICATE)
                     .prepareGenerateCardAsymmetricKeyPair(keyPairContainer)
                     .prepareComputeCardCertificate(cardCertificateComputationData)

@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso;
+package com.idear.devices.card.cardkit.keyple;
 
 import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class CalypsoSam extends Sam {
+public class KeypleCalypsoSam extends Sam {
 
     private final String samName;
     private final String lockSecret;
@@ -95,7 +95,7 @@ public class CalypsoSam extends Sam {
         if (lockSecret == null || lockSecret.isEmpty())
             throw new SamException("lock secret sam can not be null or empty");
 
-        samReader = Assert.isNull(ReaderPCSC.plugin.getReader(samName), "sam reader '%s' not founded.");
+        samReader = Assert.isNull(KeypleReader.plugin.getReader(samName), "sam reader '%s' not founded.");
         legacySam = initCalypsoSam(samReader, lockSecret);
         serial = HexUtil.toHex(legacySam.getSerialNumber());
     }

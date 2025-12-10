@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso;
+package com.idear.devices.card.cardkit.keyple;
 
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.reader.Reader;
@@ -55,12 +55,12 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-public class ReaderPCSC extends Reader<CardReaderEvent> {
+public class KeypleReader extends Reader<CardReaderEvent> {
 
     /** The name of the physical card reader. */
     private final String readerName;
     /** The associated Calypso SAM instance used for secure transactions. */
-    private final CalypsoSam calypsoSam;
+    private final KeypleCalypsoSam keypleCalypsoSam;
     /** Manager responsible for Calypso secure regular transactions. */
     @ToString.Exclude
     private SecureRegularModeTransactionManager cardTransactionManager;
@@ -89,6 +89,9 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
     @ToString.Exclude
     private final List<EventListener> cardEventListenerList = new ArrayList<>();
 
+    private boolean waitingForCardPresent;
+    private boolean waitingForCardAbsent;
+
     /**
      * Retrieves the set of available reader names registered in the PCSC plugin.
      *
@@ -105,10 +108,10 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
      * @throws Exception if the reader is not found or initialization fails.
      */
     @Override
-    public void init() throws Exception {
+    public void connect() throws Exception {
         cardReader = Assert.isNull(plugin.getReader(readerName), "Reader '%s' not founded.", readerName);
-        calypsoSam.init();
-        log.info("New PC/SC reader started, sam: {} #{} @{}", calypsoSam.getSamProviderCode(), calypsoSam.getSerial(), calypsoSam.getSamType() );
+        keypleCalypsoSam.init();
+        log.info("New keyple reader started, sam: {} #{} @{}", keypleCalypsoSam.getSamProviderCode(), keypleCalypsoSam.getSerial(), keypleCalypsoSam.getSamType() );
     }
 
     @Override
@@ -132,7 +135,8 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
      * the operation is safely aborted without throwing an exception.
      * </p>
      */
-    public void updateCalypsoCardSession() {
+    @Override
+    public void connectToCard() {
         SmartCard smartCard;
 
         smartCard = cardSelectionManager
@@ -155,8 +159,45 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
         cardTransactionManager = calypsoCardApiFactory.createSecureRegularModeTransactionManager(
                 cardReader,
                 calypsoCard,
-                calypsoSam.getSymmetricCryptoSettingsRT()
+                keypleCalypsoSam.getSymmetricCryptoSettingsRT()
         );
+    }
+
+    @Override
+    public void waitForCardPresent(long l) {
+        long start = System.currentTimeMillis();
+        waitingForCardPresent = true;
+        while (waitingForCardPresent) {
+            if (isCardOnReader())
+                break;
+
+            if (l > 0 && (System.currentTimeMillis() - start) >= l)
+                break;
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException ignored) {
+            }
+        }
+        connectToCard();
+        waitingForCardPresent = false;
+    }
+
+    @Override
+    public void waitForCarAbsent(long l) {
+        long start = System.currentTimeMillis();
+        waitingForCardAbsent = true;
+        while (waitingForCardPresent) {
+            if (!isCardOnReader())
+                break;
+
+            if (l > 0 && (System.currentTimeMillis() - start) >= l)
+                break;
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException ignored) {
+            }
+        }
+        waitingForCardAbsent = false;
     }
 
     /**
@@ -168,7 +209,7 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
      *
      * @param aid The Calypso application identifier (AID) to filter cards.
      */
-    public void initCardObserver(String aid) {
+    public void startApplicationSelection(String aid) {
 
         // Create a card selection manager
         cardSelectionManager = readerApiFactory.createCardSelectionManager();
@@ -234,6 +275,9 @@ public class ReaderPCSC extends Reader<CardReaderEvent> {
          */
         @Override
         public void onReaderEvent(CardReaderEvent e) {
+            if (e.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
+                connectToCard();
+
             fireEvent(e);
         }
     }

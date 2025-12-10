@@ -1,11 +1,11 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.EditCardFile;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
@@ -44,7 +44,7 @@ import org.eclipse.keypop.calypso.card.WriteAccessLevel;
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0
  */
-public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
+public class RenewedCard extends Transaction<Boolean, KeypleReader> {
 
     public static final String NAME = "RENEWED_CARD";
 
@@ -119,7 +119,7 @@ public class RenewedCard extends Transaction<Boolean, ReaderPCSC> {
      * @throws CardException if no card is present in the reader
      */
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card invalidated");
 

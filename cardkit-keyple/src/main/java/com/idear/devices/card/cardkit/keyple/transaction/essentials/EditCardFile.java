@@ -1,7 +1,7 @@
-package com.idear.devices.card.cardkit.calypso.transaction.essentials;
+package com.idear.devices.card.cardkit.keyple.transaction.essentials;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
@@ -29,7 +29,7 @@ import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0.0
  */
-public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
+public class EditCardFile extends Transaction<Boolean, KeypleReader> {
 
     private final File<?> file;
     private final int recordNumber;
@@ -60,7 +60,7 @@ public class EditCardFile extends Transaction<Boolean, ReaderPCSC> {
      * @throws CardException   If the card file could not be read or updated.
      */
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
 
         reader.getCardTransactionManager()
                 .prepareOpenSecureSession(writeAccessLevel)

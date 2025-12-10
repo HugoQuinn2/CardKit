@@ -25,7 +25,7 @@
         <module>cardkit-core</module>
         <module>cardkit-keyple</module>
         <module>cardkit-test</module>
-        <module>cardkit-example</module>
+        <module>cardkit-pcsc</module>
     </modules>
 
     <properties>

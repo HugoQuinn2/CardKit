@@ -1,11 +1,11 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardData;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFile;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.ReadCardFilePartially;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SimpleReadCard;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.ReadCardData;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.ReadCardFile;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.ReadCardFilePartially;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.SimpleReadCard;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.CalypsoProduct;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
@@ -15,13 +15,13 @@ import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
 import org.eclipse.keypop.calypso.card.card.SvLoadLogRecord;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
-import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
 import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
@@ -42,7 +42,7 @@ import java.util.SortedMap;
  * </p>
  *
  * @see CalypsoCardCDMX
- * @see ReaderPCSC
+ * @see KeypleReader
  * @see ReadCardData
  * @see SimpleReadCard
  * @see Transaction
@@ -53,7 +53,7 @@ import java.util.SortedMap;
  * @author Victor Hugo Gaspar Quinn
  */
 @Slf4j
-public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
+public class ReadAllCard extends Transaction<CalypsoCardCDMX, KeypleReader> {
 
     public static final String NAME = "READ_ALL_CARD";
 
@@ -83,19 +83,18 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
      *     containing the full card data.</li>
      * </ol>
      *
-     * @param reader the {@link ReaderPCSC} instance used to communicate with the Calypso card
+     * @param reader the {@link KeypleReader} instance used to communicate with the Calypso card
      * @return a {@link TransactionResult} containing the fully read {@link CalypsoCardCDMX} instance
      * @throws ReaderException if no card is detected in the reader
      * @throws CardException if there is an error while reading the card data
      */
     @Override
-    public TransactionResult<CalypsoCardCDMX> execute(ReaderPCSC reader) {
+    public TransactionResult<CalypsoCardCDMX> execute(KeypleReader reader) {
 
         // Initialize the card model to store the read data
         calypsoCardCDMX = new CalypsoCardCDMX();
 
         // Ensure the reader session is up-to-date
-        reader.updateCalypsoCardSession();
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
         // Check if the Dedicated File (DF) is invalid
@@ -124,7 +123,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
     }
 
     private void readLogFiles(
-            ReaderPCSC reader,
+            KeypleReader reader,
             CalypsoCard calypsoCard) {
         try {
             reader.getCardTransactionManager()
@@ -153,7 +152,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         }
     }
 
-    private void readEnvironmentFile(ReaderPCSC reader) {
+    private void readEnvironmentFile(KeypleReader reader) {
         readFile = reader.execute(
                 new ReadCardFile(WriteAccessLevel.DEBIT, Calypso.ENVIRONMENT_FILE, 1)
         );
@@ -165,7 +164,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         }
     }
 
-    private void readEventFiles(ReaderPCSC reader) {
+    private void readEventFiles(KeypleReader reader) {
         readFiles = reader.execute(
                 new ReadCardFilePartially(Calypso.EVENT_FILE, (byte) 1, (byte) 3, 0, 29)
         );
@@ -183,7 +182,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, ReaderPCSC> {
         calypsoCardCDMX.setEvents(events);
     }
 
-    private void readContractFiles(ReaderPCSC reader) {
+    private void readContractFiles(KeypleReader reader) {
         readFiles = reader.execute(
                 new ReadCardFilePartially(Calypso.CONTRACT_FILE, (byte) 1, (byte) 8, 0, 10)
         );

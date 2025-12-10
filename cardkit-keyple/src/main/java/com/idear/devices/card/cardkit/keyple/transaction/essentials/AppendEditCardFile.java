@@ -1,7 +1,7 @@
-package com.idear.devices.card.cardkit.calypso.transaction.essentials;
+package com.idear.devices.card.cardkit.keyple.transaction.essentials;
 
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
-import com.idear.devices.card.cardkit.calypso.transaction.RenewedCard;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.keyple.transaction.RenewedCard;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
@@ -42,14 +42,14 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * </p>
  *
  * @see File
- * @see ReaderPCSC
+ * @see KeypleReader
  * @see SecureRegularModeTransactionManager
  * @see RenewedCard
  *
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0.0
  */
-public class AppendEditCardFile extends Transaction<Boolean, ReaderPCSC> {
+public class AppendEditCardFile extends Transaction<Boolean, KeypleReader> {
 
     private final File<?> file;
 
@@ -76,7 +76,7 @@ public class AppendEditCardFile extends Transaction<Boolean, ReaderPCSC> {
      * @throws CardException if no valid card is detected in the reader
      */
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
         if (!reader.execute(new SimpleReadCard()).isOk())
             throw new CardException("no card on reader");
 

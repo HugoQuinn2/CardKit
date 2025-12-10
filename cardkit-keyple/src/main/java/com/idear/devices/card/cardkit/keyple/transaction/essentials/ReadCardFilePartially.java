@@ -1,11 +1,11 @@
-package com.idear.devices.card.cardkit.calypso.transaction.essentials;
+package com.idear.devices.card.cardkit.keyple.transaction.essentials;
 
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import lombok.Getter;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
@@ -30,12 +30,12 @@ import java.util.SortedMap;
  * a {@link ReaderException} is thrown.</p>
  *
  * @see Transaction
- * @see ReaderPCSC
+ * @see KeypleReader
  * @see CalypsoCard
  * @see SimpleReadCard
  */
 @Getter
-public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]>, ReaderPCSC> {
+public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]>, KeypleReader> {
 
     private final byte fileId;
     private final byte fromRecord;
@@ -62,7 +62,7 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
     }
 
     /**
-     * Executes the partial file read transaction using the specified {@link ReaderPCSC}.
+     * Executes the partial file read transaction using the specified {@link KeypleReader}.
      *
      * <p>The process includes:
      * <ul>
@@ -73,17 +73,13 @@ public class ReadCardFilePartially extends Transaction<SortedMap<Integer, byte[]
      * </ul>
      * </p>
      *
-     * @param reader The {@link ReaderPCSC} instance used to communicate with the card.
+     * @param reader The {@link KeypleReader} instance used to communicate with the card.
      * @return A {@link TransactionResult} containing a sorted map where the key is the record number
      *         and the value is the corresponding byte array of data.
      * @throws ReaderException If no card is detected in the reader.
      */
     @Override
-    public TransactionResult<SortedMap<Integer, byte[]>> execute(ReaderPCSC reader) {
-        if (!reader.getCardReader().isCardPresent()) {
-            throw new ReaderException("No card on reader");
-        }
-
+    public TransactionResult<SortedMap<Integer, byte[]>> execute(KeypleReader reader) {
         CalypsoCard calypsoCard = reader.getCalypsoCard();
 
         try {

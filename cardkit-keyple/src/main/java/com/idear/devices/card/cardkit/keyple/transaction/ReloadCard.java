@@ -1,9 +1,9 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
@@ -34,7 +34,7 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * <p>Progress updates are sent via {@link #reportProgress(int, String)}, which can be observed externally.
  */
 @Getter
-public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
+public class ReloadCard extends Transaction<Boolean, KeypleReader> {
 
     public static final String NAME = "RELOAD_CARD";
 
@@ -101,7 +101,7 @@ public class ReloadCard extends Transaction<Boolean, ReaderPCSC> {
      * @return TransactionResult containing success/failure and status message.
      */
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
 
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card invalidated");

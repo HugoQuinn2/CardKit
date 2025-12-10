@@ -1,9 +1,9 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.NetworkCode;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
@@ -14,7 +14,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
-public class InvalidateCard extends Transaction<Boolean, ReaderPCSC> {
+public class InvalidateCard extends Transaction<Boolean, KeypleReader> {
 
     public static final String NAME = "INVALIDATE_CARD";
 
@@ -54,7 +54,7 @@ public class InvalidateCard extends Transaction<Boolean, ReaderPCSC> {
     }
 
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
 
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card already invalidated");

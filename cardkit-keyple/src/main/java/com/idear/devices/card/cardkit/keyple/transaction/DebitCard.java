@@ -1,10 +1,10 @@
-package com.idear.devices.card.cardkit.calypso.transaction;
+package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
@@ -40,7 +40,7 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Slf4j
-public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
+public class DebitCard extends Transaction<Boolean, KeypleReader> {
 
     private static final int MAX_POSSIBLE_AMOUNT = 32767;
     public static final String NAME = "DEBIT_CARD";
@@ -126,7 +126,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
     }
 
     @Override
-    public TransactionResult<Boolean> execute(ReaderPCSC reader) {
+    public TransactionResult<Boolean> execute(KeypleReader reader) {
         log.info("Debiting card {}.", calypsoCardCDMX.getSerial());
 
         if (!calypsoCardCDMX.isEnabled())
@@ -248,7 +248,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * @param transactionType The type of the transaction.
      * @param finalAmount     The debit amount.
      */
-    private void recordEvent(ReaderPCSC reader, TransactionType transactionType, int finalAmount) {
+    private void recordEvent(KeypleReader reader, TransactionType transactionType, int finalAmount) {
         reader.execute(new SaveEvent(
                 calypsoCardCDMX,
                 transactionType.getValue(),
@@ -288,7 +288,7 @@ public class DebitCard extends Transaction<Boolean, ReaderPCSC> {
      * @param reader      The card reader.
      * @param debitAmount The amount to debit.
      */
-    private void performDebit(ReaderPCSC reader, int debitAmount) {
+    private void performDebit(KeypleReader reader, int debitAmount) {
 //        reader.getCardTransactionManager()
 //                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
 //                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)

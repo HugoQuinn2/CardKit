@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.calypso;
+package com.idear.devices.card.cardkit.keyple;
 
 public interface EventListener {
     void onEvent(TransactionDataEvent transactionDataEvent);
