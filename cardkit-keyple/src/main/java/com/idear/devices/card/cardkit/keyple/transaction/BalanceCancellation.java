@@ -15,6 +15,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
@@ -40,6 +41,7 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * @see ReloadCard
  * @see Transaction
  */
+@RequiredArgsConstructor
 public class BalanceCancellation extends Transaction<Boolean, KeypleReader> {
 
     public static final String NAME = "BALANCE_CANCELLATION";
@@ -49,52 +51,6 @@ public class BalanceCancellation extends Transaction<Boolean, KeypleReader> {
     private final Provider provider;
     private final LocationCode locationId;
     private final Contract contract;
-
-    /**
-     * Constructs a new {@code BalanceCancellation} transaction.
-     *
-     * @param calypsoCardCDMX the Calypso card instance whose balance will be canceled
-     * @param locationId      the ID of the location where the transaction is performed
-     * @param contract        the contract associated with the transaction
-     * @param transactionType the type of transaction being executed
-     */
-    public BalanceCancellation(
-            CalypsoCardCDMX calypsoCardCDMX,
-            TransactionType transactionType,
-            Provider provider,
-            LocationCode locationId,
-            Contract contract) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.provider = provider;
-        this.locationId = locationId;
-        this.contract = contract;
-        this.transactionType = transactionType;
-    }
-
-    /**
-     * Constructs a new {@code BalanceCancellation} transaction with the first {@link Contract} accepted founded.
-     *
-     * @param calypsoCardCDMX the Calypso card instance whose balance will be canceled
-     * @param locationId      the ID of the location where the transaction is performed
-     * @param transactionType the type of transaction being executed
-     */
-    public BalanceCancellation(
-            CalypsoCardCDMX calypsoCardCDMX,
-            TransactionType transactionType,
-            Provider provider,
-            LocationCode locationId) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.locationId = locationId;
-        this.transactionType = transactionType;
-
-        this.contract = calypsoCardCDMX.getContracts()
-                .findFirst(c -> c.getStatus().isAccepted())
-                .orElseThrow(() -> new CardException(
-                        "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
-        this.provider = provider;
-    }
 
     /**
      * Executes the balance cancellation transaction.
@@ -111,10 +67,6 @@ public class BalanceCancellation extends Transaction<Boolean, KeypleReader> {
      */
     @Override
     public TransactionResult<Boolean> execute(KeypleReader reader) {
-
-        if (!calypsoCardCDMX.isEnabled())
-            throw new CardException("card invalidated");
-
         int negativeAmount = calypsoCardCDMX.getBalance() * (-1);
 
         reader.getCardTransactionManager()

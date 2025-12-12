@@ -14,8 +14,9 @@ import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
+//import lombok.var;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
@@ -53,20 +54,12 @@ import java.util.SortedMap;
  * @author Victor Hugo Gaspar Quinn
  */
 @Slf4j
+@NoArgsConstructor
 public class ReadAllCard extends Transaction<CalypsoCardCDMX, KeypleReader> {
-
-    public static final String NAME = "READ_ALL_CARD";
 
     private CalypsoCardCDMX calypsoCardCDMX;
     private TransactionResult<byte[]> readFile;
     private TransactionResult<SortedMap<Integer, byte[]>> readFiles;
-
-    /**
-     * Creates a new {@code ReadAllCard} transaction with the default name "read all card".
-     */
-    public ReadAllCard() {
-        super(NAME);
-    }
 
     /**
      * Executes the full card reading process.
@@ -90,7 +83,6 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, KeypleReader> {
      */
     @Override
     public TransactionResult<CalypsoCardCDMX> execute(KeypleReader reader) {
-
         // Initialize the card model to store the read data
         calypsoCardCDMX = new CalypsoCardCDMX();
 
@@ -102,9 +94,7 @@ public class ReadAllCard extends Transaction<CalypsoCardCDMX, KeypleReader> {
 
         // Extract and set the card serial number
         calypsoCardCDMX.setSerial(HexUtil.toHex(calypsoCard.getApplicationSerialNumber()));
-
-        if (reader.getCardTransactionManager() != null)
-            reader.getCardTransactionManager().processCommands(ChannelControl.CLOSE_AFTER);
+        log.info("Reading card {}", calypsoCardCDMX.getSerial());
 
         readLogFiles(reader, calypsoCard);
         readEnvironmentFile(reader);

@@ -10,7 +10,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.keyple.KeypleReader;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
+//import lombok.var;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 

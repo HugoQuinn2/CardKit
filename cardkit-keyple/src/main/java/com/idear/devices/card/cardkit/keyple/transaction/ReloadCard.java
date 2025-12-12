@@ -15,6 +15,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
@@ -34,9 +35,8 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * <p>Progress updates are sent via {@link #reportProgress(int, String)}, which can be observed externally.
  */
 @Getter
+@RequiredArgsConstructor
 public class ReloadCard extends Transaction<Boolean, KeypleReader> {
-
-    public static final String NAME = "RELOAD_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Provider provider;
@@ -44,55 +44,6 @@ public class ReloadCard extends Transaction<Boolean, KeypleReader> {
     private final int passenger;
     private final LocationCode locationId;
     private final int amount;
-
-    /**
-     * Constructs a reload and renew transaction for a specific card.
-     *
-     * @param calypsoCardCDMX The card to reload.
-     * @param amount          The amount to add to the card balance.
-     * @param contract        The contract to renew if applicable.
-     * @param locationId      The location ID performing the operation.
-     */
-    public ReloadCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            Provider provider,
-            LocationCode locationId,
-            int amount,
-            Contract contract,
-            int passenger) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.provider = provider;
-        this.amount = amount;
-        this.contract = contract;
-        this.passenger = passenger;
-        this.locationId = locationId;
-    }
-
-    /**
-     * Constructs a reload and renew transaction for a specific card.
-     *
-     * @param calypsoCardCDMX The card to reload.
-     * @param amount          The amount to add to the card balance.
-     * @param locationId      The location ID performing the operation.
-     */
-    public ReloadCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            Provider provider,
-            LocationCode locationId,
-            int amount) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.provider = provider;
-        this.amount = amount;
-        this.passenger = 0;
-        this.locationId = locationId;
-
-        this.contract = calypsoCardCDMX.getContracts()
-                .findFirst(c -> c.getStatus().isAccepted())
-                .orElseThrow(() -> new CardException(
-                        "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
-    }
 
     /**
      * Executes the reload and renew operation.

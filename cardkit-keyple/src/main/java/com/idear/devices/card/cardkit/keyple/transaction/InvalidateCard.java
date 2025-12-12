@@ -11,47 +11,19 @@ import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
+@RequiredArgsConstructor
 public class InvalidateCard extends Transaction<Boolean, KeypleReader> {
-
-    public static final String NAME = "INVALIDATE_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Provider provider;
     private final Contract contract;
     private final LocationCode locationId;
+
     private TransactionType transactionType = TransactionType.BLACKLISTED_CARD;
-
-    public InvalidateCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            NetworkCode networkCode,
-            Provider provider,
-            LocationCode locationId,
-            Contract contract) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.provider = provider;
-        this.contract = contract;
-        this.locationId = locationId;
-    }
-
-    public InvalidateCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            NetworkCode networkCode,
-            Provider provider,
-            LocationCode locationId) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-
-        this.contract = calypsoCardCDMX.getContracts()
-                .findFirst(c -> c.getStatus().isAccepted())
-                .orElseThrow(() -> new CardException(
-                        "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
-        this.provider = provider;
-        this.locationId = locationId;
-    }
 
     @Override
     public TransactionResult<Boolean> execute(KeypleReader reader) {

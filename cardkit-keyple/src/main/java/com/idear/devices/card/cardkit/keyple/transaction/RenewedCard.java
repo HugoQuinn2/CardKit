@@ -12,6 +12,7 @@ import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 
 /**
@@ -44,9 +45,8 @@ import org.eclipse.keypop.calypso.card.WriteAccessLevel;
  * @author Victor Hugo Gaspar Quinn
  * @version 1.0
  */
+@RequiredArgsConstructor
 public class RenewedCard extends Transaction<Boolean, KeypleReader> {
-
-    public static final String NAME = "RENEWED_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final NetworkCode networkCode;
@@ -55,57 +55,6 @@ public class RenewedCard extends Transaction<Boolean, KeypleReader> {
     private final Contract contract;
     private final int daysOffset;
     private final int duration;
-
-    /**
-     * Creates a new {@code RenewedContract} transaction.
-     *
-     * @param calypsoCardCDMX the Calypso card wrapper
-     * @param locationId      the location ID where the renewal occurs
-     * @param contract        the contract to be verified and potentially renewed
-     * @param daysOffset      the number of days before expiration to trigger a renewal
-     */
-    public RenewedCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            NetworkCode networkCode,
-            Provider provider,
-            LocationCode locationId,
-            Contract contract,
-            int daysOffset,
-            int duration) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.networkCode = networkCode;
-        this.provider = provider;
-        this.locationId = locationId;
-        this.contract = contract;
-        this.daysOffset = daysOffset;
-        this.duration = duration;
-    }
-
-    /**
-     * Creates a new {@code RenewedContract} transaction.
-     *
-     * @param calypsoCardCDMX the Calypso card wrapper
-     * @param locationId      the location ID where the renewal occurs
-     * @param contract        the contract to be verified and potentially renewed
-     * @param daysOffset      the number of days before expiration to trigger a renewal
-     */
-    public RenewedCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            NetworkCode networkCode,
-            Provider provider,
-            LocationCode locationId,
-            Contract contract,
-            int daysOffset) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.networkCode = networkCode;
-        this.provider = provider;
-        this.locationId = locationId;
-        this.contract = contract;
-        this.daysOffset = daysOffset;
-        this.duration = PeriodType.encode(PeriodType.MONTH, 60);
-    }
 
     /**
      * Executes the renewal transaction.
@@ -129,7 +78,7 @@ public class RenewedCard extends Transaction<Boolean, KeypleReader> {
         // Renew duration and start date
         contract.setDuration(duration);
         contract.setStartDate(ReverseDate.now());
-        contract.setStatus(ContractStatus.CONTRACT_PARTLY_USED);
+        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
 
        reader.execute(
                 new EditCardFile(

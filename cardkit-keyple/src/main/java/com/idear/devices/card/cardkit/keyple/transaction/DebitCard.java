@@ -14,6 +14,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.DateUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
@@ -40,93 +41,23 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Slf4j
+@RequiredArgsConstructor
 public class DebitCard extends Transaction<Boolean, KeypleReader> {
 
     private static final int MAX_POSSIBLE_AMOUNT = 32767;
-    public static final String NAME = "DEBIT_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final Provider provider;
+    private final int provider;
     private final Contract contract;
     private final int passenger;
-    private final LocationCode locationId;
+    private final int locationId;
     private final int amount;
 
     private int contractDaysOffset = 0;
 
-    /**
-     * Creates a new debit transaction with a known contract.
-     *
-     * @param calypsoCardCDMX The Calypso card instance.
-     * @param provider  The provider of the device performing the debit.
-     * @param contract        The contract associated with the card.
-     * @param passenger       The passenger ID.
-     * @param amount          The amount to debit.
-     * @param locationId      The location of the transaction.
-     */
-    public DebitCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            NetworkCode networkCode,
-            Provider provider,
-            LocationCode locationId,
-            int amount,
-            int passenger,
-            Contract contract) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.provider = provider;
-        this.contract = contract;
-        this.passenger = passenger;
-        this.amount = amount;
-        this.locationId = locationId;
-    }
-
-    /**
-     * Creates a new debit transaction, automatically resolving the first accepted contract.
-     *
-     * @param calypsoCardCDMX The Calypso card instance.
-     * @param provider  The provider of the device performing the debit.
-     * @param passenger       The passenger ID.
-     * @param amount          The amount to debit.
-     * @param locationId      The location of the transaction.
-     */
-    public DebitCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            Provider provider,
-            LocationCode locationId,
-            int amount,
-            int passenger) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.provider = provider;
-        this.passenger = passenger;
-        this.amount = amount;
-        this.locationId = locationId;
-
-        this.contract = calypsoCardCDMX.getContracts()
-                .findFirst(c -> c.getStatus().isAccepted())
-                .orElseThrow(() -> new CardException(
-                        "card '%s' without valid contract", calypsoCardCDMX.getSerial()));
-    }
-
-    /**
-     * Creates a new debit transaction, automatically resolving the first accepted contract and default passenger 0.
-     *
-     * @param calypsoCardCDMX The Calypso card instance.
-     * @param provider  The provider of the device performing the debit.
-     * @param amount          The amount to debit.
-     * @param locationId      The location of the transaction.
-     */
-    public DebitCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            Provider provider,
-            LocationCode locationId,
-            int amount) {
-        this(calypsoCardCDMX, provider, locationId, amount, 0);
-    }
-
     @Override
     public TransactionResult<Boolean> execute(KeypleReader reader) {
+        LocationCode locationCode = new LocationCode(this.locationId);
         log.info("Debiting card {}.", calypsoCardCDMX.getSerial());
 
         if (!calypsoCardCDMX.isEnabled())
@@ -140,7 +71,7 @@ public class DebitCard extends Transaction<Boolean, KeypleReader> {
 
         validatePassback(now, lastDebitDateTime);
 
-        Equipment equipment = locationId.getEquipment();
+        Equipment equipment = locationCode.getEquipment();
         validateProfileOnEquipment(equipment);
         validateContract(provider);
 
@@ -193,20 +124,21 @@ public class DebitCard extends Transaction<Boolean, KeypleReader> {
      * @param deviceProvider The provider performing the transaction.
      * @throws CardException if contract validations fail.
      */
-    private void validateContract(Provider deviceProvider) {
-        if (!contract.getStatus().isAccepted())
+    private void validateContract(int deviceProvider) {
+        if (!contract.getStatus().decode(ContractStatus.RFU).isAccepted())
             throw new CardException("card without valid contract");
 
         if (contract.isExpired(0))
             throw new CardException("card expired on %s", contract.getExpirationDate(0));
 
-        if (contract.getModality() == Modality.MONOMODAL &&
-                !deviceProvider.equals(contract.getProvider())) {
+        if (contract.getModality().decode(Modality.FORBIDDEN) == Modality.MONOMODAL &&
+                contract.getProvider().getValue() != provider) {
             throw new CardException("monomodal verification failed, device provider must match contract provider %s",
                     contract.getProvider());
         }
 
-        if (contract.getTariff() == Tariff.SEASON_PASS || contract.getTariff() == Tariff.TICKET_BOOK)
+        if (contract.getTariff().decode(Tariff.RFU) == Tariff.SEASON_PASS ||
+                contract.getTariff().decode(Tariff.RFU) == Tariff.TICKET_BOOK)
             throw new CardException("unsupported tariff %s on this transaction", contract.getTariff());
     }
 
@@ -253,8 +185,8 @@ public class DebitCard extends Transaction<Boolean, KeypleReader> {
                 calypsoCardCDMX,
                 transactionType.getValue(),
                 calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
-                provider.getValue(),
-                locationId,
+                provider,
+                new LocationCode(locationId),
                 contract,
                 passenger,
                 calypsoCardCDMX.getEvents().getNextTransactionNumber(),

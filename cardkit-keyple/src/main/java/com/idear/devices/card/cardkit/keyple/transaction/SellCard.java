@@ -12,13 +12,13 @@ import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 
 import java.util.Optional;
 
+@RequiredArgsConstructor
 public class SellCard extends Transaction<Boolean, KeypleReader> {
-
-    public static final String NAME = "SELL_CARD";
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final LocationCode locationCode;
@@ -26,22 +26,6 @@ public class SellCard extends Transaction<Boolean, KeypleReader> {
     private final Modality modality;
     private final RestrictTime restrictTime;
     private final int amount;
-
-    public SellCard(
-            CalypsoCardCDMX calypsoCardCDMX,
-            LocationCode locationCode,
-            Provider provider,
-            Modality modality,
-            RestrictTime restrictTime,
-            int amount) {
-        super(NAME);
-        this.calypsoCardCDMX = calypsoCardCDMX;
-        this.locationCode = locationCode;
-        this.provider = provider;
-        this.modality = modality;
-        this.restrictTime = restrictTime;
-        this.amount = amount;
-    }
 
     @Override
     public TransactionResult<Boolean> execute(KeypleReader reader) {
@@ -51,7 +35,7 @@ public class SellCard extends Transaction<Boolean, KeypleReader> {
         Profile profile = calypsoCardCDMX.getEnvironment().getProfile().decode(Profile.RFU);
 
         Optional<Contract> optionalContract = calypsoCardCDMX.getContracts()
-                .findFirst(c -> c.getStatus().isAccepted());
+                .findFirst(c -> c.getStatus().decode().isAccepted());
         Contract contract;
         contract = optionalContract.orElseGet(() -> Contract.buildContract(
                 1,
@@ -66,7 +50,7 @@ public class SellCard extends Transaction<Boolean, KeypleReader> {
 
         contract.setDuration(profile.getValidityContract());
         contract.setStartDate(ReverseDate.now());
-        contract.setStatus(ContractStatus.CONTRACT_PARTLY_USED);
+        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
 
         reader.execute(
                 new EditCardFile(
