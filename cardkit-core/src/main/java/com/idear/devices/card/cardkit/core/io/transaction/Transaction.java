@@ -21,9 +21,6 @@ import java.util.function.IntConsumer;
 @Data
 public abstract class Transaction<T, R extends Reader<?>> {
 
-    /** The name or identifier of this transaction. */
-    private final String name;
-
     /**
      * Optional progress listener. It receives values between 0 and 100
      * indicating the current progress of the transaction with a message.

@@ -58,6 +58,9 @@ public class TransactionResult<T> extends Item {
     /** The execution time of the transaction in milliseconds. */
     private long time;
 
+    /** The exception cached if apply */
+    private Throwable exception;
+
     /**
      * Checks whether the current transaction has the specified status.
      *
