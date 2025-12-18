@@ -1,5 +1,8 @@
 package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.ContractStatus;
+import com.idear.devices.card.cardkit.core.exception.CardException;
+
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -7,6 +10,17 @@ import java.util.stream.Collectors;
 public class Contracts implements List<Contract> {
 
     private final List<Contract> contracts = new ArrayList<>();
+
+    /**
+     * Find first contract that status is accepted {@link ContractStatus#isAccepted()}
+     *
+     * @return first contract that status is accepted {@link ContractStatus#isAccepted()}
+     * @throws CardException if the card have any valid contract
+     */
+    public Contract getFirstContractValid() {
+        return this.findFirst(c -> c.getStatus().decode(ContractStatus.RFU).isAccepted())
+                .orElseThrow(() -> new CardException("card without valid contract"));
+    }
 
     /**
      * Finds all contracts that match the given condition.
