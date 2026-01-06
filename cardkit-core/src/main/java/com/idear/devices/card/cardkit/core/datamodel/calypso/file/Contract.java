@@ -1,6 +1,7 @@
 package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
@@ -21,10 +22,10 @@ public class Contract extends File<Contract> {
     private int id;
 
     /** Structure version contract*/
-    private int version;
+    private final ValueDecoder<Version> version = ValueDecoder.emptyDecoder(Version.class);
 
     /** Actual status contract*/
-    private ContractStatus status;
+    private final ValueDecoder<ContractStatus> status = ValueDecoder.emptyDecoder(ContractStatus.class);
 
     /** Reserved for future use*/
     private int rfu = 0;
@@ -36,18 +37,18 @@ public class Contract extends File<Contract> {
     private int duration;
 
     /** Network that issued this contract*/
-    private NetworkCode network;
+    private final ValueDecoder<NetworkCode> network = ValueDecoder.emptyDecoder(NetworkCode.class);
 
     /** Provider that issued this contract*/
-    private Provider provider;
+    private final ValueDecoder<Provider> provider = ValueDecoder.emptyDecoder(Provider.class);
 
     /** Modes of transportation in which the contract is valid*/
-    private Modality modality;
+    private final ValueDecoder<Modality> modality = ValueDecoder.emptyDecoder(Modality.class);
 
     private int counterCode;
 
     /** Contract type*/
-    private Tariff tariff;
+    private final ValueDecoder<Tariff> tariff = ValueDecoder.emptyDecoder(Tariff.class);
 
     /** Determine whether the contract allows transfers*/
     private int journeyInterChanges;
@@ -58,7 +59,7 @@ public class Contract extends File<Contract> {
     private int vehicleClassAllowed;
 
     /** Code to identify temporal constraints*/
-    private RestrictTime restrictTime;
+    private final ValueDecoder<RestrictTime> restrictTime = ValueDecoder.emptyDecoder(RestrictTime.class);
 
     /** Code of the condition for which the contract is not valid*/
     private int restrictCode;
@@ -132,21 +133,21 @@ public class Contract extends File<Contract> {
 
         setContent(HexUtil.toHex(data));
 
-        this.version              = data[0] & 0xff;
-        this.status               = ContractStatus.decode(data[1] & 0xff);
+        this.version.setValue(data[0] & 0xff);
+        this.status.setValue(data[1] & 0xff);
         this.rfu                  = (data[2] & 0b11000000) >> 6;
-        this.startDate            = ReverseDate.fromDays(ByteUtils.extractInt(data, 2, 2, false) & 0x3fff);
+        this.startDate            = ReverseDate.fromReversedValue(ByteUtils.extractInt(data, 2, 2, false));
         this.duration             = data[4] & 0xff;
-        this.network              = NetworkCode.decode(data[5] & 0xff);
-        this.provider             = Provider.decode(data[6] & 0xff);
+        this.network.setValue(data[5] & 0xff);
+        this.provider.setValue(data[6] & 0xff);
 
-        this.modality             = Modality.decode((data[7] & 0b10000000) >> 7);
+        this.modality.setValue((data[7] & 0b10000000) >> 7);
         this.counterCode          = (data[7] & 0b01100000) >> 5;
-        this.tariff               = Tariff.decode((data[7] & 0b00011111));
+        this.tariff.setValue((data[7] & 0b00011111));
 
         this.journeyInterChanges  = (data[8] & 0b10000000) >> 7;
         this.vehicleClassAllowed  = (data[8] & 0b01100000) >> 5;
-        this.restrictTime         = RestrictTime.decode(data[8] & 0b00011111);
+        this.restrictTime.setValue(data[8] & 0b00011111);
 
         this.restrictCode         = data[9] & 0xff;
         this.periodJourney        = data[10] & 0xff;
@@ -179,27 +180,25 @@ public class Contract extends File<Contract> {
 
     public static Contract buildContract(
             int id,
-            int version,
-            NetworkCode networkCode,
-            Provider provider,
-            Modality modality,
-            Tariff tariff,
-            RestrictTime restrictTime,
-            int saleSam) {
+            int networkCode,
+            int provider,
+            int modality,
+            int tariff,
+            int restrictTime) {
         Contract contract = new Contract(id);
 
-        contract.setVersion(version);
-        contract.setNetwork(networkCode);
-        contract.setProvider(provider);
-        contract.setModality(modality);
-        contract.setTariff(tariff);
-        contract.setRestrictTime(restrictTime);
-        contract.setSaleSam(saleSam);
 
-        contract.setStatus(ContractStatus.CONTRACT_PARTLY_USED);
+        contract.getNetwork().setValue(networkCode);
+        contract.getProvider().setValue(provider);
+        contract.getModality().setValue(modality);
+        contract.getTariff().setValue(tariff);
+        contract.getRestrictTime().setValue(restrictTime);
+
+        contract.getVersion().setValue(Version.VERSION_3_3);
+        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
         contract.setStartDate(ReverseDate.now());
         contract.setSaleDate(CompactDate.now());
-        contract.setDuration(PeriodType.encode(PeriodType.MONTH, 60));
+        contract.setDuration(60);
 
         return contract;
     }

@@ -42,7 +42,7 @@ sequenceDiagram
 %% Unsupported tariff
     DebitCard->>Contract: checkUnsupportedTariff()
     alt Tariff unsupported
-        DebitCard-->>User: abort "unsupported tariff on this transaction"
+        DebitCard-->>User: abort "unsupported tariff on this abstractTransaction"
     end
 
 %% Resolve debit amount
@@ -54,7 +54,7 @@ sequenceDiagram
 %% Perform debit
     DebitCard->>ReaderPCSC: performDebit(finalAmount)
 
-%% Determine transaction type
+%% Determine abstractTransaction type
     DebitCard->>DebitCard: determineTransactionType(finalAmount, equipment)
 
 %% Save event

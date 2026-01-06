@@ -3,14 +3,14 @@ package com.idear.devices.card.cardkit.core.io.transaction;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.exception.SamException;
-import com.idear.devices.card.cardkit.core.io.reader.Reader;
+import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
 
 public enum TransactionStatus {
     /** Status returned when the transaction was successful */
     OK,
     /** Status returned when a card kit exception [{@link CardException}, {@link SamException} and {@link ReaderException}]
-     * is throwing on {@link Transaction#execute(Reader)}*/
+     * is throwing on {@link AbstractTransaction#execute(AbstractReader)}*/
     ABORTED,
-    /** Status returned when a when an {@link Exception} error occurs on {@link Transaction#execute(Reader)}*/
+    /** Status returned when a when an {@link Exception} error occurs on {@link AbstractTransaction#execute(AbstractReader)}*/
     ERROR
 }

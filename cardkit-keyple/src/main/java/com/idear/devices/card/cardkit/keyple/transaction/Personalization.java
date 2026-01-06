@@ -1,32 +1,34 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
 @RequiredArgsConstructor
-public class Personalization extends Transaction<Boolean, KeypleReader> {
+public class Personalization extends AbstractTransaction<Boolean, KeypleTransactionContext> {
 
     private final int recordNumber;
     private final File<?> file;
 
     @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
+    public TransactionResult<Boolean> execute(KeypleTransactionContext context) {
 
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.PERSONALIZATION)
-                .prepareUpdateRecord(
-                        file.getFileId(),
-                        recordNumber,
-                        file.unparse())
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+        KeypleUtil.updateRecord(
+                context.getCardTransactionManager(),
+                file,
+                recordNumber
+        );
 
-        return null;
+        return TransactionResult
+                .<Boolean>builder()
+                .data(true)
+                .build();
     }
 
 }

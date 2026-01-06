@@ -1,23 +1,28 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.DateUtils;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
+import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
 import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
@@ -42,26 +47,28 @@ import java.time.LocalDateTime;
 @Getter
 @Slf4j
 @RequiredArgsConstructor
-public class DebitCard extends Transaction<Boolean, KeypleReader> {
+public class DebitCard
+        extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private static final int MAX_POSSIBLE_AMOUNT = 32767;
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final int provider;
     private final Contract contract;
-    private final int passenger;
     private final int locationId;
+    private final int provider;
+    private final int passenger;
     private final int amount;
 
-    private int contractDaysOffset = 0;
+    private Tariff tariff;
 
     @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
+    public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
+        SecureRegularModeTransactionManager ctm = context.getCardTransactionManager();
+        KeypleCardReader cardReader = context.getKeypleCardReader();
+        CalypsoCard calypsoCard = cardReader.getCalypsoCard();
+
         LocationCode locationCode = new LocationCode(this.locationId);
         log.info("Debiting card {}.", calypsoCardCDMX.getSerial());
-
-        if (!calypsoCardCDMX.isEnabled())
-            throw new CardException("disabled card");
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime lastDebitDateTime = LocalDateTime.of(
@@ -76,12 +83,36 @@ public class DebitCard extends Transaction<Boolean, KeypleReader> {
         validateContract(provider);
 
         int finalAmount = resolveDebitAmount();
-        performDebit(reader, finalAmount);
+        KeypleUtil.performDebit(ctm, finalAmount);
 
         TransactionType transactionType = determineTransactionType(finalAmount, equipment);
-        recordEvent(reader, transactionType, finalAmount);
+        Event event = Event.builEvent(
+          transactionType.getValue(),
+          calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+          provider,
+          contract.getId(),
+          passenger,
+          getCalypsoCardCDMX().getEvents().getNextTransactionNumber(),
+          locationId,
+          finalAmount
+        );
 
-        return buildTransactionResult(finalAmount);
+        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+                ctm,
+                calypsoCardCDMX,
+                calypsoCard,
+                context.getKeypleCalypsoSamReader(),
+                event,
+                contract,
+                calypsoCardCDMX.getBalance(),
+                provider
+        );
+
+        return TransactionResult
+                .<TransactionDataEvent>builder()
+                .transactionStatus(TransactionStatus.OK)
+                .data(transactionDataEvent)
+                .build();
     }
 
     /**
@@ -174,27 +205,6 @@ public class DebitCard extends Transaction<Boolean, KeypleReader> {
     }
 
     /**
-     * Records a transaction event on the card.
-     *
-     * @param reader          The card reader.
-     * @param transactionType The type of the transaction.
-     * @param finalAmount     The debit amount.
-     */
-    private void recordEvent(KeypleReader reader, TransactionType transactionType, int finalAmount) {
-        reader.execute(new SaveEvent(
-                calypsoCardCDMX,
-                transactionType.getValue(),
-                calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
-                provider,
-                new LocationCode(locationId),
-                contract,
-                passenger,
-                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
-                finalAmount
-        ));
-    }
-
-    /**
      * Builds a TransactionResult object containing the transaction outcome and message.
      *
      * @param finalAmount The final debit amount.
@@ -212,33 +222,5 @@ public class DebitCard extends Transaction<Boolean, KeypleReader> {
                 .data(true)
                 .message(message)
                 .build();
-    }
-
-    /**
-     * Performs the actual debit operation on the card.
-     *
-     * @param reader      The card reader.
-     * @param debitAmount The amount to debit.
-     */
-    private void performDebit(KeypleReader reader, int debitAmount) {
-//        reader.getCardTransactionManager()
-//                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-//                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-//                .processCommands(ChannelControl.KEEP_OPEN);
-
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                .prepareSvDebit(
-                        debitAmount,
-                        CompactDate.now().toBytes(),
-                        CompactTime.now().toBytes())
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
-    }
-
-    public DebitCard contractDaysOffset(int contractDaysOffset) {
-        this.contractDaysOffset = contractDaysOffset;
-        return this;
     }
 }

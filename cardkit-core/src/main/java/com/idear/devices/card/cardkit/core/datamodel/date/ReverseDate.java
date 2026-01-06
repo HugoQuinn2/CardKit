@@ -34,20 +34,66 @@ import java.time.temporal.ChronoUnit;
 @Getter
 public class ReverseDate extends Item implements IDataModel {
 
-    /** Maximum number of days representable using 14 bits (2^14 - 1). */
-    public static final int MAX_DAYS = 0x3FFF;
+    /** Mask for the 14 least significant bits (2^14 - 1). */
+    public static final int MASK_14_BITS = 0x3FFF;
 
-    private final LocalDate date;
+    /** Reference date (1997-01-01). */
+    public static final LocalDate OFFSET = LocalDate.of(1997, 1, 1);
+
+    /** Stored inverted value (14 bits). */
     private final int value;
 
+    /** Human-readable date computed from the non-inverted value. */
+    private final LocalDate date;
+
     /**
-     * Constructs a ReverseDate from a reversed day code.
+     * Internal constructor from a reversed day value.
      *
-     * @param days the 14-bit reversed day code
+     * @param reversedDays 14-bit inverted day count
      */
-    private ReverseDate(int days) {
-        this.value = days;
-        this.date = CompactDate.OFFSET.plusDays(days);
+    private ReverseDate(int reversedDays) {
+        validate14Bits(reversedDays);
+
+        this.value = reversedDays;
+
+        int normalDays = reversedDays ^ MASK_14_BITS;
+        this.date = OFFSET.plusDays(normalDays);
+    }
+
+    /**
+     * Internal constructor from a reversed day value.
+     *
+     * @param value 14-bit inverted day count
+     */
+    private ReverseDate(int value, LocalDate localDate) {
+        this.value = value;
+        this.date = localDate;
+    }
+
+    public static ReverseDate zero() {
+        return new ReverseDate(0, null);
+    }
+
+    /**
+     * Creates a {@code ReverseDate} from a normal day count since {@link #OFFSET}.
+     *
+     * @param days number of days since OFFSET (0–16383)
+     * @return ReverseDate instance
+     */
+    public static ReverseDate fromDays(int days) {
+        validate14Bits(days);
+
+        int reversedDays = days ^ MASK_14_BITS;
+        return new ReverseDate(reversedDays);
+    }
+
+    /**
+     * Returns the non-inverted day count since {@link #OFFSET}.
+     *
+     * @return original day count
+     */
+    public int toDays() {
+        return value ^ MASK_14_BITS;
     }
 
     /**
@@ -59,16 +105,8 @@ public class ReverseDate extends Item implements IDataModel {
         return fromLocalDate(LocalDate.now());
     }
 
-    /**
-     * Creates a ReverseDate from a day count since {@link CompactDate#OFFSET}.
-     * The 14 LSB are inverted using XOR with 0x3FFF.
-     *
-     * @param days number of days since OFFSET
-     * @return ReverseDate instance
-     */
-    public static ReverseDate fromDays(int days) {
-        int reverseDays = days ^ MAX_DAYS;
-        return new ReverseDate(reverseDays);
+    public static ReverseDate fromReversedValue(int reversedDays) {
+        return new ReverseDate(reversedDays);
     }
 
     /**
@@ -88,7 +126,7 @@ public class ReverseDate extends Item implements IDataModel {
      * @return integer representing the original number of days since OFFSET
      */
     public int unReverseDays() {
-        return getValue() ^ MAX_DAYS;
+        return getValue() ^ MASK_14_BITS;
     }
 
     /**
@@ -98,10 +136,10 @@ public class ReverseDate extends Item implements IDataModel {
      * @return byte array of size 2 representing this date
      */
     public byte[] toBytes() {
-        int value = getValue();
-        byte msb = (byte) ((value & 0xFF00) >> 8);
-        byte lsb = (byte) (value & 0x00FF);
-        return new byte[]{msb, lsb};
+        return new byte[]{
+                (byte) ((value >> 8) & 0xFF),
+                (byte) (value & 0xFF)
+        };
     }
 
     /**
@@ -112,5 +150,13 @@ public class ReverseDate extends Item implements IDataModel {
     @JsonValue
     public String toJsonValue() {
         return date.toString();
+    }
+
+    private static void validate14Bits(int value) {
+        if (value < 0 || value > MASK_14_BITS) {
+            throw new IllegalArgumentException(
+                    "Value out of range (0–16383): " + value
+            );
+        }
     }
 }

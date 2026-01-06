@@ -1,19 +1,32 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.EditCardFile;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
+import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.keyple.core.util.ByteArrayUtil;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
+import org.eclipse.keypop.calypso.crypto.legacysam.transaction.CardTransactionLegacySamExtension;
+import org.eclipse.keypop.calypso.crypto.legacysam.transaction.TraceableSignatureComputationData;
+
+import java.util.Arrays;
 
 /**
  * Represents a transaction that verifies whether a Calypso card contract is about to expire
@@ -46,67 +59,68 @@ import org.eclipse.keypop.calypso.card.WriteAccessLevel;
  * @version 1.0
  */
 @RequiredArgsConstructor
-public class RenewedCard extends Transaction<Boolean, KeypleReader> {
+@Slf4j
+public class RenewedCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final NetworkCode networkCode;
-    private final Provider provider;
-    private final LocationCode locationId;
     private final Contract contract;
-    private final int daysOffset;
+    private final int locationId;
+    private final int provider;
+    private final int passenger;
+    private final ReverseDate startDate;
     private final int duration;
 
-    /**
-     * Executes the renewal transaction.
-     * <p>
-     * This method reads the card, verifies contract validity, and renews it if within
-     * the renewal window. It also saves an event record and updates the contract on the card.
-     * </p>
-     *
-     * @param reader the Calypso card reader
-     * @return a {@link TransactionResult} indicating whether the renewal was performed successfully
-     * @throws CardException if no card is present in the reader
-     */
     @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
-        if (!calypsoCardCDMX.isEnabled())
-            throw new CardException("card invalidated");
+    public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
+        log.info("Renewing card {}, contract id: {}, start date: {}, expiration: {}",
+                calypsoCardCDMX.getSerial(), contract.getId(), startDate.getDate(),
+                PeriodType.getExpirationDate(startDate, duration));
 
-        if (!contract.isExpired(daysOffset))
-            throw new CardException("card contract does not require renewal expiration date: " + contract.getExpirationDate(daysOffset));
+        Contract _contract = KeypleUtil.setupRenewContract(
+                context.getCardTransactionManager(),
+                HexUtil.toByteArray(calypsoCardCDMX.getSerial()),
+                contract,
+                provider,
+                startDate,
+                duration
+        );
 
-        // Renew duration and start date
-        contract.setDuration(duration);
-        contract.setStartDate(ReverseDate.now());
-        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
+        KeypleUtil.editCardFile(
+                context.getCardTransactionManager(),
+                WriteAccessLevel.DEBIT,
+                _contract.getFileId(),
+                _contract.getId(),
+                _contract.unparse(),
+                ChannelControl.CLOSE_AFTER
+        );
 
-       reader.execute(
-                new EditCardFile(
-                        contract,
-                        contract.getId(),
-                        WriteAccessLevel.DEBIT))
-               .throwMessageOnError(CardException.class)
-               .throwMessageOnAborted(CardException.class);
-
-        reader.execute(
-                new SaveEvent(
-                        calypsoCardCDMX,
-                        TransactionType.SV_CONTRACT_RENEWAL.getValue(),
-                        calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
-                        provider.getValue(),
-                        locationId,
-                        contract,
-                        0,
-                        0,
-                        calypsoCardCDMX.getEvents().getNextTransactionNumber()
-                )).throwMessageOnError(CardException.class)
-                .throwMessageOnAborted(CardException.class);
+//        Event event = Event.builEvent(
+//                TransactionType.SV_CONTRACT_RENEWAL.getValue(),
+//                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+//                provider,
+//                _contract.getId(),
+//                passenger,
+//                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+//                locationId,
+//                0
+//        );
+//
+//        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+//                context.getCardTransactionManager(),
+//                calypsoCardCDMX,
+//                context.getKeypleCardReader().getCalypsoCard(),
+//                context.getKeypleCalypsoSamReader(),
+//                event,
+//                _contract,
+//                calypsoCardCDMX.getBalance(),
+//                provider
+//        );
 
         return TransactionResult
-                .<Boolean>builder()
+                .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message("card contract renewed, expiration date: " + contract.getExpirationDate(daysOffset))
-                .data(true)
+                .message("card contract renewed, expiration date: " + _contract.getExpirationDate(0))
+                .data(null)
                 .build();
     }
 

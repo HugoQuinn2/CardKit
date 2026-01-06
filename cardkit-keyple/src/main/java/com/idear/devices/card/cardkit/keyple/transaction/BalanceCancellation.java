@@ -1,20 +1,22 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.NetworkCode;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
+import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
@@ -39,65 +41,52 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  * @version 1.0.0
  * @see CalypsoCardCDMX
  * @see ReloadCard
- * @see Transaction
+ * @see AbstractTransaction
  */
 @RequiredArgsConstructor
-public class BalanceCancellation extends Transaction<Boolean, KeypleReader> {
-
-    public static final String NAME = "BALANCE_CANCELLATION";
+public class BalanceCancellation extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final TransactionType transactionType;
-    private final Provider provider;
-    private final LocationCode locationId;
     private final Contract contract;
+    private final int transactionType;
+    private final int locationId;
+    private final int provider;
+    private final int passenger;
 
-    /**
-     * Executes the balance cancellation transaction.
-     * <p>
-     * The method first checks if a card is present in the reader.
-     * If not, a {@link CardException} is thrown.
-     * It then creates a {@link ReloadCard} transaction with a negative amount
-     * equal to the current card balance and a contract offset of 1800 days (approximately 60 months).
-     * </p>
-     *
-     * @param reader the reader interface used to communicate with the card
-     * @return a {@link TransactionResult} containing the success status and related message
-     * @throws CardException if no card is detected in the reader
-     */
     @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
+    public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
         int negativeAmount = calypsoCardCDMX.getBalance() * (-1);
 
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
-                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
-                .prepareSvReload(
-                        negativeAmount,
-                        CompactDate.now().toBytes(),
-                        CompactTime.now().toBytes(),
-                        ByteUtils.extractBytes(0, 2))
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+        KeypleUtil.reloadCard(context.getCardTransactionManager(), negativeAmount);
 
-        reader.execute(new SaveEvent(
-                calypsoCardCDMX,
-                transactionType.getValue(),
-                calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU).getValue(),
-                provider.getValue(),
+        Event event = Event.builEvent(
+                transactionType,
+                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+                provider,
+                contract.getId(),
+                passenger,
+                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
                 locationId,
-                contract,
-                0,
-                negativeAmount,
-                calypsoCardCDMX.getEvents().getNextTransactionNumber())
+                negativeAmount
         );
 
-        return TransactionResult.
-                <Boolean>builder()
+        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+                context.getCardTransactionManager(),
+                calypsoCardCDMX,
+                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCalypsoSamReader(),
+                event,
+                contract,
+                calypsoCardCDMX.getBalance(),
+                provider
+        );
+
+        return TransactionResult.<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .data(true)
-                .message("balance card '" + calypsoCardCDMX.getSerial() + "' canceled")
+                .data(transactionDataEvent)
+                .message(String.format("Final card balance for '%s': %s", calypsoCardCDMX.getSerial(), calypsoCardCDMX.getBalance() + negativeAmount))
                 .build();
 
     }
+
 }

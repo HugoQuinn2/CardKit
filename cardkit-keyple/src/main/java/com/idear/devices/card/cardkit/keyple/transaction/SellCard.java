@@ -1,83 +1,81 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
+import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.EditCardFile;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
+import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class SellCard extends Transaction<Boolean, KeypleReader> {
+public class SellCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final LocationCode locationCode;
-    private final Provider provider;
-    private final Modality modality;
-    private final RestrictTime restrictTime;
+    private final Contract contract;
+    private final int locationId;
+    private final int provider;
+    private final int passenger;
     private final int amount;
 
-    @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
-        if (!calypsoCardCDMX.isEnabled())
-            throw new CardException("card invalidated");
+    public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
 
-        Profile profile = calypsoCardCDMX.getEnvironment().getProfile().decode(Profile.RFU);
+        contract.setDuration(PeriodType.encode(PeriodType.MONTH, 60));
+//        contract.setStartDate(ReverseDate.now());
+//        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
+//        contract.setSaleSam(context.getKeypleCalypsoSamReader().getSerial());
 
-        Optional<Contract> optionalContract = calypsoCardCDMX.getContracts()
-                .findFirst(c -> c.getStatus().decode().isAccepted());
-        Contract contract;
-        contract = optionalContract.orElseGet(() -> Contract.buildContract(
-                1,
-                1,
-                calypsoCardCDMX.getEnvironment().getNetwork().decode(NetworkCode.RFU),
+        KeypleUtil.editCardFile(
+                context.getCardTransactionManager(),
+                WriteAccessLevel.PERSONALIZATION,
+                Calypso.CONTRACT_FILE,
+                contract.getId(),
+                contract.unparse()
+        );
+
+        Event event = Event.builEvent(
+                TransactionType.CARD_PURCHASE.getValue(),
+                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
                 provider,
-                modality,
-                profile.getTariff(),
-                restrictTime,
-                Integer.parseInt(reader.getKeypleCalypsoSam().getSerial(), 16)
-        ));
+                contract.getId(),
+                passenger,
+                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+                locationId,
+                amount
+        );
 
-        contract.setDuration(profile.getValidityContract());
-        contract.setStartDate(ReverseDate.now());
-        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
-
-        reader.execute(
-                new EditCardFile(
-                        contract,
-                        contract.getId(),
-                        WriteAccessLevel.DEBIT))
-                .throwMessageOnAborted(CardException.class)
-                .throwMessageOnError(CardException.class);
-
-        reader.execute(
-                new SaveEvent(
-                        calypsoCardCDMX,
-                        TransactionType.CARD_PURCHASE.getValue(),
-                        calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
-                        provider.getValue(),
-                        locationCode,
-                        contract,
-                        0,
-                        amount,
-                        calypsoCardCDMX.getEvents().getNextTransactionNumber()
-                ));
+        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+                context.getCardTransactionManager(),
+                calypsoCardCDMX,
+                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCalypsoSamReader(),
+                event,
+                contract,
+                calypsoCardCDMX.getBalance(),
+                provider
+        );
 
         return TransactionResult
-                .<Boolean>builder()
+                .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message("card contract renewed, expiration date: " + contract.getExpirationDate(0))
-                .data(true)
+                .message(String.format("card %s purchase, expiration: %s", calypsoCardCDMX.getSerial(), contract.getExpirationDate(0)))
+                .data(transactionDataEvent)
                 .build();
     }
+
 }

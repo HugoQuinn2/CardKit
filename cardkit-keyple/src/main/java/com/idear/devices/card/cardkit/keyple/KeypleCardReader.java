@@ -1,0 +1,205 @@
+package com.idear.devices.card.cardkit.keyple;
+
+import com.idear.devices.card.cardkit.core.exception.ReaderException;
+import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
+import com.idear.devices.card.cardkit.core.io.reader.IBasicReader;
+import com.idear.devices.card.cardkit.core.utils.Assert;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
+import org.eclipse.keyple.card.generic.CardTransactionManager;
+import org.eclipse.keyple.card.generic.ChannelControl;
+import org.eclipse.keyple.card.generic.GenericExtensionService;
+import org.eclipse.keyple.core.service.Plugin;
+import org.eclipse.keyple.core.service.SmartCardService;
+import org.eclipse.keyple.core.service.SmartCardServiceProvider;
+import org.eclipse.keyple.plugin.pcsc.PcscPluginFactoryBuilder;
+import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
+import org.eclipse.keypop.calypso.card.card.CalypsoCard;
+import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
+import org.eclipse.keypop.calypso.card.transaction.*;
+import org.eclipse.keypop.calypso.card.transaction.FreeTransactionManager;
+import org.eclipse.keypop.reader.*;
+import org.eclipse.keypop.reader.selection.CardSelectionManager;
+import org.eclipse.keypop.reader.selection.spi.SmartCard;
+
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Represents a PC/SC-based Calypso card reader.
+ * <p>
+ * This class manages initialization, card detection, and session updates
+ * for Calypso-compatible cards using the Keyple PCSC plugin.
+ * It integrates SAM (Secure Access Module) handling and provides
+ * event-driven card observation.
+ * </p>
+ *
+ * <p>Dependencies:</p>
+ * <ul>
+ *   <li>{@link CalypsoExtensionService}</li>
+ *   <li>{@link SmartCardService}</li>
+ *   <li>{@link PcscPluginFactoryBuilder}</li>
+ * </ul>
+ *
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * ReaderPCSC reader = new ReaderPCSC(
+ *                 "READER_NAME",
+ *                 new CalypsoSam("SAM_NAME", "lockSecret")
+ *         );
+ *
+ * reader.init();
+ * reader.initCardObserver("aid");
+ * }</pre>
+ */
+@EqualsAndHashCode(callSuper = true)
+@Slf4j
+@Data
+public class KeypleCardReader extends AbstractReader implements IBasicReader {
+
+    /** The name of the physical card reader. */
+    private final String readerName;
+    private final String aid;
+
+    /** The associated Calypso SAM instance used for secure transactions. */
+    private KeypleCalypsoSamReader keypleCalypsoSamReader;
+    /** Manager responsible for Calypso secure regular transactions. */
+    @ToString.Exclude
+    private SecureRegularModeTransactionManager cardTransactionManager;
+    private FreeTransactionManager freeTransactionManager;
+    private CardTransactionManager genericTransactionManager;
+    /** Manages card selection and filtering based on AIDs. */
+    @ToString.Exclude
+    private CardSelectionManager cardSelectionManager;
+    /** The underlying physical card reader instance. */
+    private CardReader cardReader;
+    /** Represents the currently selected Calypso card. */
+    private CalypsoCard calypsoCard;
+
+
+    // Start Pcsc plugin
+    @ToString.Exclude
+    public static final SmartCardService smartCardService = SmartCardServiceProvider.getService();
+
+    @ToString.Exclude
+    public static final CalypsoExtensionService calypsoExtensionService = CalypsoExtensionService.getInstance();
+    @ToString.Exclude
+    public static final CalypsoCardApiFactory calypsoCardApiFactory = calypsoExtensionService.getCalypsoCardApiFactory();
+    @ToString.Exclude
+    private final List<EventListener> cardEventListenerList = new ArrayList<>();
+
+    private boolean waitingForCardPresent;
+    private boolean waitingForCardAbsent;
+
+    /**
+     * Initializes the reader by binding to the physical PCSC reader
+     * and initializing the associated SAM.
+     *
+     * @throws Exception if the reader is not found or initialization fails.
+     */
+    @Override
+    public void connect() throws Exception {
+        cardReader = KeypleUtil.getCardReaderMatchingName(readerName);
+    }
+
+    @Override
+    public void disconnect() {
+
+    }
+
+    @Override
+    public boolean isCardOnReader() {
+        if (cardReader == null)
+            return false;
+
+        return cardReader.isCardPresent();
+    }
+
+    /**
+     * Updates the active Calypso card session by selecting and retrieving
+     * the currently inserted card.
+     * <p>
+     * If the card selection fails or no matching card is found,
+     * the operation is safely aborted without throwing an exception.
+     * </p>
+     */
+    @Override
+    public void connectToCard() {
+        if (!isCardOnReader())
+            throw new ReaderException("no card on reader");
+        calypsoCard = KeypleUtil.selectCard(cardReader, aid);
+
+        genericTransactionManager = GenericExtensionService.getInstance()
+                .createCardTransaction(cardReader, calypsoCard);
+    }
+
+    @Override
+    public void disconnectFromCard() {
+        calypsoCard = null;
+        freeTransactionManager = null;
+        cardTransactionManager = null;
+    }
+
+    @Override
+    public void waitForCardPresent(long l) {
+        long start = System.currentTimeMillis();
+        waitingForCardPresent = true;
+        while (waitingForCardPresent) {
+            if (isCardOnReader())
+                break;
+
+            if (l > 0 && (System.currentTimeMillis() - start) >= l)
+                break;
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException ignored) {
+            }
+        }
+        connectToCard();
+        waitingForCardPresent = false;
+    }
+
+    @Override
+    public void waitForCarAbsent(long l) {
+        long start = System.currentTimeMillis();
+        waitingForCardAbsent = true;
+        while (waitingForCardPresent) {
+            if (!isCardOnReader())
+                break;
+
+            if (l > 0 && (System.currentTimeMillis() - start) >= l)
+                break;
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException ignored) {
+            }
+        }
+        waitingForCardAbsent = false;
+    }
+
+    public void fireCardEvent(TransactionDataEvent transactionDataEvent) {
+        for (EventListener eventListener : cardEventListenerList)
+            eventListener.onEvent(transactionDataEvent);
+    }
+
+    @Override
+    public ResponseAPDU simpleCommand(CommandAPDU command) {
+        if (genericTransactionManager  == null)
+            return null;
+
+        ResponseAPDU responseAPDU = new ResponseAPDU(
+                genericTransactionManager
+                        .prepareApdu(command.getBytes())
+                        .processApdusToByteArrays(ChannelControl.KEEP_OPEN).get(0)
+        );
+
+        if (responseAPDU.getSW() != 9000)
+            throw new RuntimeException("unexpected response APDU SW code: " + responseAPDU.getSW());
+
+        return responseAPDU;
+    }
+}

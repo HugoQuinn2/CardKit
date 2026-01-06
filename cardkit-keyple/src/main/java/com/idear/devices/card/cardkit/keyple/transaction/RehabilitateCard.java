@@ -1,32 +1,34 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
 @RequiredArgsConstructor
-public class RehabilitateCard extends Transaction<Boolean, KeypleReader> {
+public class RehabilitateCard extends AbstractTransaction<Boolean, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
 
     @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
+    public TransactionResult<Boolean> execute(KeypleTransactionContext context) {
 
         if (calypsoCardCDMX.isEnabled())
             throw new CardException("card already rehabilitate");
 
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.PERSONALIZATION)
-                .prepareRehabilitate()
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+        KeypleUtil.rehabilitateCard(context.getCardTransactionManager());
 
-        return null;
+        return TransactionResult
+                .<Boolean>builder()
+                .data(true)
+                .message("card " + calypsoCardCDMX.getSerial() + " rehabilitated")
+                .build();
     }
 
 }

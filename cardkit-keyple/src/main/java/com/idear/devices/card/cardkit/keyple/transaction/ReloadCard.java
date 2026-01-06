@@ -1,19 +1,22 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.keyple.KeypleReader;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.transaction.essentials.SaveEvent;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
-import com.idear.devices.card.cardkit.core.io.transaction.Transaction;
+import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.keyple.KeypleUtil;
+import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
@@ -32,61 +35,48 @@ import org.eclipse.keypop.calypso.card.transaction.SvOperation;
  *   <li>Creates a reload event and performs the reload operation on the card.</li>
  * </ol>
  *
- * <p>Progress updates are sent via {@link #reportProgress(int, String)}, which can be observed externally.
  */
 @Getter
 @RequiredArgsConstructor
-public class ReloadCard extends Transaction<Boolean, KeypleReader> {
+public class ReloadCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final Provider provider;
     private final Contract contract;
+    private final int locationId;
+    private final int provider;
     private final int passenger;
-    private final LocationCode locationId;
     private final int amount;
 
-    /**
-     * Executes the reload and renew operation.
-     *
-     * @param reader The reader interface used to communicate with the card.
-     * @return TransactionResult containing success/failure and status message.
-     */
     @Override
-    public TransactionResult<Boolean> execute(KeypleReader reader) {
+    public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
 
-        if (!calypsoCardCDMX.isEnabled())
-            throw new CardException("card invalidated");
+        KeypleUtil.reloadCard(context.getCardTransactionManager(), amount);
 
-
-        // Step 4: Perform reload operation
-        reader.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
-                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
-                .prepareSvReload(
-                        amount,
-                        CompactDate.now().toBytes(),
-                        CompactTime.now().toBytes(),
-                        ByteUtils.extractBytes(0, 2))
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
-
-        reader.execute(
-                new SaveEvent(
-                        calypsoCardCDMX,
-                        TransactionType.RELOAD.getValue(),
-                        calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
-                        provider.getValue(),
-                        locationId,
-                        contract,
-                        passenger,
-                        calypsoCardCDMX.getEvents().getNextTransactionNumber(),
-                        amount
-                )
+        Event event = Event.builEvent(
+                TransactionType.RELOAD.getValue(),
+                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+                provider,
+                contract.getId(),
+                passenger,
+                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+                locationId,
+                amount
         );
 
-        return TransactionResult.<Boolean>builder()
+        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+                context.getCardTransactionManager(),
+                calypsoCardCDMX,
+                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCalypsoSamReader(),
+                event,
+                contract,
+                calypsoCardCDMX.getBalance(),
+                provider
+        );
+
+        return TransactionResult.<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .data(true)
+                .data(transactionDataEvent)
                 .message(String.format("Final card balance for '%s': %s", calypsoCardCDMX.getSerial(), calypsoCardCDMX.getBalance() + amount))
                 .build();
     }

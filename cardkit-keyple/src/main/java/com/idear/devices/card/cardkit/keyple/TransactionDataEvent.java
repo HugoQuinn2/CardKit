@@ -21,7 +21,7 @@ public class TransactionDataEvent extends Item {
 
     private final Event event;
     private final LocationCode locationCode;
-    private final Profile profile;
+    private final int profile;
     private final int balanceBeforeTransaction;
     private final int transactionAmount;
     private final String samSerial;

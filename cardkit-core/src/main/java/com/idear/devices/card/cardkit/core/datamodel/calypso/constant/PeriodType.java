@@ -1,7 +1,10 @@
 package com.idear.devices.card.cardkit.core.datamodel.calypso.constant;
 
+import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
 
 @Getter
 @RequiredArgsConstructor
@@ -30,5 +33,26 @@ public enum PeriodType {
             throw new IllegalArgumentException("Trips must be between 0 and 63");
 
         return (period.getBits() << 6) | (trips & 0b00111111);
+    }
+
+    public static LocalDate getExpirationDate(LocalDate startDate, int duration) {
+        int _duration = duration & 0xFF;
+        PeriodType period = PeriodType.decode((_duration >> 6) & 0b11);
+        int trips = _duration & 0b00111111;
+
+        switch (period) {
+            case MONTH:
+                return startDate.plusMonths(trips);
+            case WEEK:
+                return startDate.plusWeeks(trips);
+            case DAY:
+                return startDate.plusDays(trips);
+        }
+
+        throw new IllegalArgumentException("Invalid duration format this most be 0bnnpppppp, n: period, p: trips");
+    }
+
+    public static LocalDate getExpirationDate(ReverseDate startDate, int duration) {
+        return getExpirationDate(startDate.getDate(), duration);
     }
 }

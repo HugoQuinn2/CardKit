@@ -1,21 +1,24 @@
 package readers;
 
+import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.NetworkCode;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Profile;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Environment;
-import com.idear.devices.card.cardkit.calypso.transaction.*;
-import com.idear.devices.card.cardkit.calypso.transaction.essentials.EditCardFile;
+import com.idear.devices.card.cardkit.keyple.transaction.*;
+import com.idear.devices.card.cardkit.keyple.transaction.essentials.EditCardFile;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.calypso.CalypsoSam;
-import com.idear.devices.card.cardkit.calypso.ReaderPCSC;
+import com.idear.devices.card.cardkit.keyple.KeypleCalypsoSamReader;
+import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
-import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
-import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.reader.CardReaderEvent;
 import org.junit.jupiter.api.Test;
+
+import javax.smartcardio.CardTerminal;
+import javax.smartcardio.TerminalFactory;
+import java.util.List;
 
 public class ACS {
 
@@ -26,9 +29,9 @@ public class ACS {
 
     @Test
     public void  editCard() throws Exception {
-        ReaderPCSC reader = new ReaderPCSC(BEA_ACS, new CalypsoSam(SAM_ACS, lockSecret));
-        reader.init();
-        reader.initCardObserver(Calypso.AID_CDMX);
+        KeypleCardReader reader = new KeypleCardReader(BEA_ACS, new KeypleCalypsoSamReader(SAM_ACS, lockSecret));
+        reader.connect();
+        reader.startApplicationSelection(Calypso.AID_CDMX);
 
         reader.addListeners(event -> {
             if (!event.getType().equals(CardReaderEvent.Type.CARD_MATCHED))
@@ -62,9 +65,9 @@ public class ACS {
 
     @Test
     public void read() throws Exception {
-        ReaderPCSC reader = new ReaderPCSC(BEA_ACS, new CalypsoSam(SAM_ACS, lockSecret));
-        reader.init();
-        reader.initCardObserver(Calypso.AID_CDMX);
+        KeypleCardReader reader = new KeypleCardReader(BEA_ACS, new KeypleCalypsoSamReader(SAM_ACS, lockSecret));
+        reader.connect();
+        reader.startApplicationSelection(Calypso.AID_CDMX);
         LocationCode locationCode = new LocationCode(0xAABCDD);
 
         reader.getCardEventListenerList().add(transactionDataEvent -> System.out.println(transactionDataEvent.toJson()));
@@ -75,29 +78,10 @@ public class ACS {
             CalypsoCardCDMX calypsoCardCDMX =  reader.execute(new ReadAllCard())
                     .throwMessageOnAborted(CardException.class)
                     .throwMessageOnError(CardException.class)
-                    .print()
                     .getData();
 
-            Environment environment = new Environment()
-                    .parse(HexUtil.toByteArray("1484015A00000000275A2F1500000000000000000002F1500000000000"));
-
-            reader.getCalypsoSam().
-
-            reader.getCardTransactionManager()
-                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-                    .prepareWriteBinary(
-                            environment.getFileId(),
-                            0,
-                            environment.unparse())
-                    .prepareCloseSecureSession()
-                    .processCommands(ChannelControl.KEEP_OPEN);
-
-//            reader.execute(new DebitCard(
-//                    calypsoCardCDMX,
-//                    Provider.CABLEBUS,
-//                    locationCode,
-//                    1_000
-//            ));
+            Environment environment = Environment.buildEnvironment(NetworkCode.CDMX.getValue(), Profile.GENERAL.getValue());
+            reader.execute(new PrePersonalization(PrePersonalization.KeyGenerated.LEGACY_SAM)).print();
         });
 
         safeWait(-1);
@@ -106,6 +90,13 @@ public class ACS {
     @Test
     public void property() {
         System.out.println(ValueDecoder.fromHexStringValue("CONTRALOR", Profile.class));
+    }
+
+    @Test
+    public void frimware() throws javax.smartcardio.CardException {
+        List<CardTerminal> terminals = TerminalFactory.getDefault().terminals().list();
+        for (CardTerminal cardTerminal : terminals)
+            System.out.println(cardTerminal);
     }
 
 
