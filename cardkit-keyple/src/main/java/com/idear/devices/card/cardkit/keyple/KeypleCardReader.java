@@ -167,7 +167,7 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
     public void waitForCarAbsent(long l) {
         long start = System.currentTimeMillis();
         waitingForCardAbsent = true;
-        while (waitingForCardPresent) {
+        while (waitingForCardAbsent) {
             if (!isCardOnReader())
                 break;
 
@@ -178,6 +178,7 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
             } catch (InterruptedException ignored) {
             }
         }
+        disconnectFromCard();
         waitingForCardAbsent = false;
     }
 
