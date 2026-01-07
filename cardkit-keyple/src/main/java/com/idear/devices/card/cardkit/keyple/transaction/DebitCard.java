@@ -146,7 +146,7 @@ public class DebitCard
             throw new CardException("card without valid contract");
 
         if (contract.isExpired(0))
-            throw new CardException("card expired on %s", contract.getExpirationDate(0));
+            throw new CardException("card expired on %s", contract.getExpirationDate());
 
         if (contract.getModality().decode(Modality.FORBIDDEN) == Modality.MONOMODAL &&
                 contract.getProvider().getValue() != provider) {

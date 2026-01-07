@@ -83,7 +83,7 @@ public class Contract extends File<Contract> {
     }
 
     public boolean isExpired(int daysOffset) {
-        return LocalDate.now().isAfter(getExpirationDate(daysOffset));
+        return LocalDate.now().isAfter(getExpirationDate().minusDays(daysOffset));
     }
 
     @JsonIgnore
@@ -161,21 +161,8 @@ public class Contract extends File<Contract> {
         return this;
     }
 
-    public LocalDate getExpirationDate(int daysOffset) {
-        int _duration = duration & 0xFF;
-        PeriodType period = PeriodType.decode((_duration >> 6) & 0b11);
-        int trips = _duration & 0b00111111;
-
-        switch (period) {
-            case MONTH:
-                return startDate.getDate().plusMonths(trips).minusDays(daysOffset);
-            case WEEK:
-                return startDate.getDate().plusWeeks(trips).minusDays(daysOffset);
-            case DAY:
-                return startDate.getDate().plusDays(trips).minusDays(daysOffset);
-        }
-
-        throw new IllegalArgumentException("Invalid duration format this most be 0bnnpppppp, n: period, p: trips");
+    public LocalDate getExpirationDate() {
+       return PeriodType.getExpirationDate(startDate, duration);
     }
 
     public static Contract buildContract(

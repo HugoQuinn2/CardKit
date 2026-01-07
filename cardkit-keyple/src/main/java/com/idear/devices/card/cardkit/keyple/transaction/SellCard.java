@@ -73,7 +73,7 @@ public class SellCard extends AbstractTransaction<TransactionDataEvent, KeypleTr
         return TransactionResult
                 .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message(String.format("card %s purchase, expiration: %s", calypsoCardCDMX.getSerial(), contract.getExpirationDate(0)))
+                .message(String.format("card %s purchase, expiration: %s", calypsoCardCDMX.getSerial(), contract.getExpirationDate()))
                 .data(transactionDataEvent)
                 .build();
     }

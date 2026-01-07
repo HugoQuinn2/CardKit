@@ -121,7 +121,7 @@ public class RenewedCard extends AbstractTransaction<TransactionDataEvent, Keypl
         return TransactionResult
                 .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message("card contract renewed, expiration date: " + _contract.getExpirationDate(0))
+                .message("card contract renewed, expiration date: " + _contract.getExpirationDate())
                 .data(transactionDataEvent)
                 .build();
     }
