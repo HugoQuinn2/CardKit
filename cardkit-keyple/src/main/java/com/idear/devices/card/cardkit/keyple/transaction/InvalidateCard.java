@@ -11,6 +11,7 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
 @RequiredArgsConstructor
 public class InvalidateCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
@@ -26,6 +27,11 @@ public class InvalidateCard extends AbstractTransaction<TransactionDataEvent, Ke
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card already invalidated");
+
+        KeypleUtil.invalidateCard(
+                context.getCardTransactionManager(),
+                ChannelControl.KEEP_OPEN
+        );
 
         Event event = Event.builEvent(
                 transactionType,
@@ -46,10 +52,9 @@ public class InvalidateCard extends AbstractTransaction<TransactionDataEvent, Ke
                 event,
                 contract,
                 calypsoCardCDMX.getBalance(),
-                provider
+                provider,
+                ChannelControl.KEEP_OPEN
         );
-
-        KeypleUtil.invalidateCard(context.getCardTransactionManager());
 
         return TransactionResult
                 .<TransactionDataEvent>builder()
