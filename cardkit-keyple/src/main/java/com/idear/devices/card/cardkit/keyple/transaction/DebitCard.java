@@ -64,6 +64,15 @@ public class DebitCard
 
     @Override
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
+        log.info("Debiting card {}, amount: {}, type: {}, provider: {}",
+                calypsoCardCDMX.getSerial(), amount, transactionType, provider);
+
+        if (amount > calypsoCardCDMX.getBalance())
+            throw new CardException("insufficient balance for debit, balance: " + calypsoCardCDMX.getBalance());
+
+        if (contract.getModality().decode(Modality.FORBIDDEN).equals(Modality.MONOMODAL) &&
+                contract.getProvider().decode(Provider.RFU).getValue() != provider)
+            throw new CardException("inconsistent provider, monomodal contract, provider most be equal");
 
         KeypleUtil.performDebit(
                 context.getCardTransactionManager(),
