@@ -72,8 +72,6 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
     public static final CalypsoExtensionService calypsoExtensionService = CalypsoExtensionService.getInstance();
     @ToString.Exclude
     public static final CalypsoCardApiFactory calypsoCardApiFactory = calypsoExtensionService.getCalypsoCardApiFactory();
-    @ToString.Exclude
-    private final List<EventListener> cardEventListenerList = new ArrayList<>();
 
     /**
      * Initializes the reader by binding to the physical PCSC reader
