@@ -3,40 +3,34 @@ package com.idear.devices.card.cardkit.keyple;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
-import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransactionManager;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.keyple.transaction.*;
-import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
+import lombok.Getter;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 
+import java.time.LocalDate;
+
+@Getter
 public class KeypleTransactionManager extends AbstractTransactionManager
         <KeypleCardReader, KeypleCalypsoSamReader, KeypleTransactionContext> {
 
-    private final String aid;
     private SecureRegularModeTransactionManager ctm;
-    private CalypsoCard lastCalypsoCard;
 
     public KeypleTransactionManager(
             KeypleCardReader cardReader,
-            KeypleCalypsoSamReader samReader,
-            String aid) {
+            KeypleCalypsoSamReader samReader) {
         super(cardReader, samReader);
-        this.aid = aid;
     }
 
     @Override
     protected KeypleTransactionContext createContext() {
-        cardReader.connectToCard();
-        if (lastCalypsoCard == null || lastCalypsoCard != cardReader.getCalypsoCard()) {
-            ctm = KeypleUtil.prepareCardTransactionManger(
-                    cardReader.getCardReader(),
-                    cardReader.getCalypsoCard(),
-                    samReader.getSymmetricCryptoSettingsRT()
-            );
-            lastCalypsoCard = cardReader.getCalypsoCard();
-        }
+        ctm = KeypleUtil.prepareCardTransactionManger(
+                cardReader.getCardReader(),
+                cardReader.getCalypsoCard(),
+                samReader.getSymmetricCryptoSettingsRT()
+        );
 
         return KeypleTransactionContext
                 .builder()
@@ -53,16 +47,18 @@ public class KeypleTransactionManager extends AbstractTransactionManager
     public TransactionResult<TransactionDataEvent> debitCard(
             CalypsoCardCDMX calypsoCardCDMX,
             Contract contract,
+            int transactionType,
             int locationId,
             int provider,
             int passenger,
             int amount) {
         return execute(new DebitCard(
-                calypsoCardCDMX, contract, locationId, provider, passenger, amount));
+                calypsoCardCDMX, contract, transactionType, locationId, provider, passenger, amount));
     }
 
     public TransactionResult<TransactionDataEvent> debitCard(
             CalypsoCardCDMX calypsoCardCDMX,
+            int transactionType,
             int locationId,
             int provider,
             int passenger,
@@ -70,6 +66,7 @@ public class KeypleTransactionManager extends AbstractTransactionManager
         return debitCard(
                 calypsoCardCDMX,
                 calypsoCardCDMX.getContracts().getFirstContractValid(),
+                transactionType,
                 locationId,
                 provider,
                 passenger,
@@ -184,8 +181,18 @@ public class KeypleTransactionManager extends AbstractTransactionManager
         return execute(new SellCard(calypsoCardCDMX, contract, locationId, provider, passenger, amount));
     }
     
-    public TransactionResult<Boolean> personalization(File<?> file, int recordNumber) {
-        return execute(new Personalization(recordNumber, file));
+    public TransactionResult<Boolean> personalization(
+            byte fileId,
+            int recordNumber,
+            byte[] data) {
+        return execute(new Personalization(fileId, recordNumber, data));
+    }
+
+    public TransactionResult<Boolean> prePersonalization(
+            PrePersonalization.KeyGenerated keyGenerated,
+            LocalDate startDate,
+            LocalDate endDate) {
+        return execute(new PrePersonalization(keyGenerated, startDate, endDate));
     }
 
 
