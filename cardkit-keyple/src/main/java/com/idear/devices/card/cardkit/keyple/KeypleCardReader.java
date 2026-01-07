@@ -3,31 +3,23 @@ package com.idear.devices.card.cardkit.keyple;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
 import com.idear.devices.card.cardkit.core.io.reader.IBasicReader;
-import com.idear.devices.card.cardkit.core.utils.Assert;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.generic.CardTransactionManager;
 import org.eclipse.keyple.card.generic.ChannelControl;
 import org.eclipse.keyple.card.generic.GenericExtensionService;
-import org.eclipse.keyple.core.service.Plugin;
 import org.eclipse.keyple.core.service.SmartCardService;
 import org.eclipse.keyple.core.service.SmartCardServiceProvider;
 import org.eclipse.keyple.plugin.pcsc.PcscPluginFactoryBuilder;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
-import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
-import org.eclipse.keypop.calypso.card.transaction.*;
-import org.eclipse.keypop.calypso.card.transaction.FreeTransactionManager;
 import org.eclipse.keypop.reader.*;
-import org.eclipse.keypop.reader.selection.CardSelectionManager;
-import org.eclipse.keypop.reader.selection.spi.SmartCard;
 
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Represents a PC/SC-based Calypso card reader.
@@ -129,11 +121,6 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
     public void disconnectFromCard() {
         calypsoCard = null;
         genericTransactionManager = null;
-    }
-
-    public void fireCardEvent(TransactionDataEvent transactionDataEvent) {
-        for (EventListener eventListener : cardEventListenerList)
-            eventListener.onEvent(transactionDataEvent);
     }
 
     @Override
