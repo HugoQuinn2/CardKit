@@ -50,12 +50,35 @@ import java.util.SortedMap;
 
 import static com.idear.devices.card.cardkit.keyple.KeypleCardReader.calypsoCardApiFactory;
 
+/**
+ * Utility class providing helper methods to interact with Calypso cards and
+ * Legacy SAM modules using the Keyple framework.
+ * <p>
+ * This class centralizes common operations such as:
+ * <ul>
+ *   <li>Reader discovery and selection</li>
+ *   <li>Calypso card and SAM selection</li>
+ *   <li>Secure session management</li>
+ *   <li>File read/write operations</li>
+ *   <li>Stored value debit/reload</li>
+ *   <li>Event logging and transaction signature computation</li>
+ * </ul>
+ * <p>
+ * All methods are static and the class is not intended to be instantiated.
+ */
 public abstract class KeypleUtil {
 
     public static final SmartCardService SMART_CARD_SERVICE = SmartCardServiceProvider.getService();
     public static final ReaderApiFactory READER_API_FACTORY = SMART_CARD_SERVICE.getReaderApiFactory();
     public static final Plugin PLUGIN = SMART_CARD_SERVICE.registerPlugin(PcscPluginFactoryBuilder.builder().build());
 
+    /**
+     * Returns the first card reader whose name matches the given regular expression.
+     *
+     * @param matchName a regular expression used to match the reader name
+     * @return the matching {@link CardReader}
+     * @throws RuntimeException if no readers are available or none match the pattern
+     */
     public static CardReader getCardReaderMatchingName(
             String matchName) {
         Set<String> setReaderNames = PLUGIN.getReaderNames();
@@ -70,6 +93,14 @@ public abstract class KeypleUtil {
         throw new RuntimeException(setReaderNames.size() + " card readers found, none matched the pattern");
     }
 
+    /**
+     * Selects a Calypso card application on the given reader using the provided AID.
+     *
+     * @param cardReader the reader where the card is inserted
+     * @param aid the application identifier (AID)
+     * @return the selected {@link CalypsoCard}
+     * @throws IllegalStateException if the application selection fails
+     */
     public static CalypsoCard selectCard(
             CardReader cardReader,
             String aid) {
@@ -96,6 +127,14 @@ public abstract class KeypleUtil {
         return  (CalypsoCard) smartCard;
     }
 
+    /**
+     * Selects a Legacy SAM card from the given reader and unlocks it if required.
+     *
+     * @param samReader the reader hosting the SAM
+     * @param lockSecret the unlock secret (may be {@code null})
+     * @return the selected {@link LegacySam}
+     * @throws SamException if the SAM cannot be selected or unlocked
+     */
     public static LegacySam selectAndUnlockSam(
             CardReader samReader,
             String lockSecret) {
@@ -140,6 +179,13 @@ public abstract class KeypleUtil {
         return sam;
     }
 
+    /**
+     * Initializes symmetric cryptographic security settings using a Legacy SAM.
+     *
+     * @param samReader the reader hosting the SAM
+     * @param sam the selected Legacy SAM
+     * @return a configured {@link SymmetricCryptoSecuritySetting}
+     */
     public static SymmetricCryptoSecuritySetting startSymmetricSecuritySettings(
             CardReader samReader,
             LegacySam sam) {
@@ -159,6 +205,17 @@ public abstract class KeypleUtil {
                 .assignDefaultKif(WriteAccessLevel.DEBIT, (byte) 0x30);
     }
 
+    /**
+     * Reads a full record from a card file.
+     *
+     * @param ctm the transaction manager
+     * @param calypsoCard the Calypso card
+     * @param writeAccessLevel the access level to use
+     * @param fileId the file identifier (SFI)
+     * @param record the record number
+     * @return the raw file content
+     * @throws CardException if the read operation fails
+     */
     public static byte[] readCardFile(
             SecureRegularModeTransactionManager ctm,
             CalypsoCard calypsoCard,
@@ -184,6 +241,20 @@ public abstract class KeypleUtil {
         return elementaryFile.getData().getContent();
     }
 
+    /**
+     * Reads a portion of records from a card file.
+     *
+     * @param ctm the transaction manager
+     * @param calypsoCard the Calypso card
+     * @param writeAccessLevel the access level to use
+     * @param fileId the file identifier (SFI)
+     * @param fromRecord starting record number
+     * @param toRecord ending record number
+     * @param offset byte offset within the record
+     * @param bytesToRead number of bytes to read
+     * @return a map of record numbers to record data
+     * @throws CardException if the operation fails
+     */
     public static SortedMap<Integer, byte[]> readCardPartially(
             SecureRegularModeTransactionManager ctm,
             CalypsoCard calypsoCard,
@@ -214,6 +285,16 @@ public abstract class KeypleUtil {
                 .getAllRecordsContent();
     }
 
+    /**
+     * Appends a new record to a card file.
+     *
+     * @param ctm the transaction manager
+     * @param writeAccessLevel the access level to use
+     * @param fileId the file identifier
+     * @param fileData the data to append
+     * @param channelControl the channel control behavior
+     * @throws CardException if the append operation fails
+     */
     public static void appendEditCardFile(
             SecureRegularModeTransactionManager ctm,
             WriteAccessLevel writeAccessLevel,
@@ -233,6 +314,15 @@ public abstract class KeypleUtil {
         }
     }
 
+    /**
+     * Appends a new record to a card file, with default channel control {@link ChannelControl#KEEP_OPEN}
+     *
+     * @param ctm the transaction manager
+     * @param writeAccessLevel the access level to use
+     * @param fileId the file identifier
+     * @param fileData the data to append
+     * @throws CardException if the append operation fails
+     */
     public static void appendEditCardFile(
             SecureRegularModeTransactionManager ctm,
             WriteAccessLevel writeAccessLevel,
@@ -241,6 +331,17 @@ public abstract class KeypleUtil {
         appendEditCardFile(ctm, writeAccessLevel, fileId, fileData, ChannelControl.KEEP_OPEN);
     }
 
+    /**
+     * Updates an existing record in a card file.
+     *
+     * @param ctm the transaction manager
+     * @param writeAccessLevel the access level to use
+     * @param fileId the file identifier
+     * @param record the record number
+     * @param data the new record data
+     * @param channelControl the channel control behavior
+     * @throws CardException if the update fails
+     */
     public static void editCardFile(
             SecureRegularModeTransactionManager ctm,
             WriteAccessLevel writeAccessLevel,
@@ -252,6 +353,7 @@ public abstract class KeypleUtil {
             ctm
                     .prepareOpenSecureSession(writeAccessLevel)
                     .prepareUpdateRecord(fileId, record, data)
+                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
                     .prepareCloseSecureSession()
                     .processCommands(channelControl);
         } catch (Exception e) {
@@ -259,6 +361,16 @@ public abstract class KeypleUtil {
         }
     }
 
+    /**
+     * Updates an existing record in a card file, with default channel control {@link ChannelControl#KEEP_OPEN}
+     *
+     * @param ctm the transaction manager
+     * @param writeAccessLevel the access level to use
+     * @param fileId the file identifier
+     * @param record the record number
+     * @param data the new record data
+     * @throws CardException if the update fails
+     */
     public static void editCardFile(
             SecureRegularModeTransactionManager ctm,
             WriteAccessLevel writeAccessLevel,
@@ -268,7 +380,19 @@ public abstract class KeypleUtil {
         editCardFile(ctm, writeAccessLevel, fileId, record, data, ChannelControl.KEEP_OPEN);
     }
 
-
+    /**
+     * Saves a transaction event on the card and builds the corresponding event data.
+     *
+     * @param ctm the transaction manager
+     * @param calypsoCardCDMX the CDMX-specific Calypso card model
+     * @param calypsoCard the Calypso card
+     * @param keypleCalypsoSamReader the SAM reader wrapper
+     * @param event the event to save
+     * @param contract the related contract
+     * @param initBalance the balance before the transaction
+     * @param provider the service provider identifier
+     * @return the generated {@link TransactionDataEvent}
+     */
     public static TransactionDataEvent saveEvent(
             SecureRegularModeTransactionManager ctm,
             CalypsoCardCDMX calypsoCardCDMX,
@@ -304,6 +428,20 @@ public abstract class KeypleUtil {
                 .build();
     }
 
+    /**
+     * Computes a transaction MAC using the SAM.
+     *
+     * @param keypleCalypsoSamReader the SAM reader wrapper
+     * @param eventType the transaction type
+     * @param transactionTimestamp the transaction timestamp
+     * @param transactionAmount the transaction amount
+     * @param terminalLocation the terminal location code
+     * @param cardType the card product type
+     * @param cardSerialHex the card serial number (hexadecimal)
+     * @param prevSvBalance the previous stored value balance
+     * @param svProvider the stored value provider
+     * @return the computed MAC as a hexadecimal string
+     */
     public static String computeTransactionSignature(
             KeypleCalypsoSamReader keypleCalypsoSamReader,
             int eventType,
@@ -335,6 +473,16 @@ public abstract class KeypleUtil {
         return HexUtil.toHex(response.getDataOut());
     }
 
+    /**
+     * Computes a transaction MAC using the SAM.
+     *
+     * @param keypleCalypsoSamReader the SAM reader wrapper
+     * @param event the event to use
+     * @param calypsoCardCDMX the calypso card data to use
+     * @param prevSvBalance the previous stored value balance
+     * @param svProvider the stored value provider
+     * @return the computed MAC as a hexadecimal string
+     */
     public static String computeTransactionSignature(
             KeypleCalypsoSamReader keypleCalypsoSamReader,
             Event event,
@@ -354,6 +502,15 @@ public abstract class KeypleUtil {
         );
     }
 
+    /**
+     * Sends a DIGEST MAC COMPUTE command to the SAM.
+     *
+     * @param samGenericTransactionManager the SAM transaction manager
+     * @param kif the key identifier
+     * @param kvc the key version
+     * @param data the data to authenticate
+     * @return a {@link GenericApduResponse} containing the MAC and status word
+     */
     public static GenericApduResponse digestMacCompute(
             CardTransactionManager samGenericTransactionManager,
             byte kif,
@@ -386,6 +543,13 @@ public abstract class KeypleUtil {
         return new GenericApduResponse(mac, sw);
     }
 
+    /**
+     * Reads the debit and load logs from the card.
+     *
+     * @param ctm the transaction manager
+     * @param calypsoCard the Calypso card
+     * @return a {@link Logs} object containing debit and load logs
+     */
     public static Logs readCardLogs(
             SecureRegularModeTransactionManager ctm,
             CalypsoCard calypsoCard) {
@@ -402,9 +566,17 @@ public abstract class KeypleUtil {
         return logs;
     }
 
+    /**
+     * Performs a debit operation on the card stored value.
+     *
+     * @param ctm the transaction manager
+     * @param amount the amount to debit
+     * @param channelControl the channel control
+     */
     public static void performDebit(
             SecureRegularModeTransactionManager ctm,
-            int amount) {
+            int amount,
+            ChannelControl channelControl) {
         ctm
                 .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                 .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
@@ -413,9 +585,26 @@ public abstract class KeypleUtil {
                         CompactDate.now().toBytes(),
                         CompactTime.now().toBytes())
                 .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+                .processCommands(channelControl);
     }
 
+    /**
+     * Performs a debit operation on the card stored value.
+     *
+     * @param ctm the transaction manager
+     * @param amount the amount to debit
+     */
+    public static void performDebit(
+            SecureRegularModeTransactionManager ctm,
+            int amount) {
+        performDebit(ctm, amount, ChannelControl.KEEP_OPEN);
+    }
+
+    /**
+     * Rehabilitates a previously invalidated card.
+     *
+     * @param ctm the transaction manager
+     */
     public static void rehabilitateCard(
             SecureRegularModeTransactionManager ctm) {
         ctm
@@ -425,6 +614,11 @@ public abstract class KeypleUtil {
                 .processCommands(ChannelControl.KEEP_OPEN);
     }
 
+    /**
+     * Invalidates the card.
+     *
+     * @param ctm the transaction manager
+     */
     public static void invalidateCard(
             SecureRegularModeTransactionManager ctm) {
         ctm
@@ -434,6 +628,12 @@ public abstract class KeypleUtil {
                 .processCommands(ChannelControl.KEEP_OPEN);
     }
 
+    /**
+     * Increases or decreases the balance card
+     *
+     * @param ctm the transaction manager
+     * @param amount the amount
+     */
     public static void reloadCard(
             SecureRegularModeTransactionManager ctm,
             int amount) {
@@ -449,28 +649,13 @@ public abstract class KeypleUtil {
                 .processCommands(ChannelControl.KEEP_OPEN);
     }
 
-    public static void updateRecord(
-            SecureRegularModeTransactionManager ctm,
-            byte fileId,
-            int recordNumber,
-            byte[] data) {
-        ctm
-                .prepareOpenSecureSession(WriteAccessLevel.PERSONALIZATION)
-                .prepareUpdateRecord(
-                        fileId,
-                        recordNumber,
-                        data)
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
-    }
-
-    public static void updateRecord(
-            SecureRegularModeTransactionManager ctm,
-            File<?> file,
-            int recordNumber) {
-        updateRecord(ctm, file.getFileId(), recordNumber, file.unparse());
-    }
-
+    /**
+     * Builds the data structure required to compute a traceable signature for a contract.
+     *
+     * @param fullSerial the full card serial number
+     * @param contract the contract to sign
+     * @return a {@link TraceableSignatureComputationData} instance
+     */
     public static TraceableSignatureComputationData buildSignatureComputationData(
             byte[] fullSerial,
             Contract contract) {
@@ -484,6 +669,13 @@ public abstract class KeypleUtil {
                 .setData(buildSignatureData(fullSerial, contract), (byte) 0x2C, (byte) 0xC4);
     }
 
+    /**
+     * Build the signature contract data with serial card
+     *
+     * @param fullSerial the serial card
+     * @param contract the contract
+     * @return the signature data
+     */
     public static byte[] buildSignatureData(
             byte[] fullSerial,
             Contract contract) {
@@ -500,6 +692,17 @@ public abstract class KeypleUtil {
         return signatureData;
     }
 
+    /**
+     * Prepares and renews a contract by computing and applying a SAM signature.
+     *
+     * @param ctm the transaction manager
+     * @param fullSerial the full card serial number
+     * @param contract the existing contract
+     * @param provider the service provider identifier
+     * @param startDate the new contract start date
+     * @param duration the contract duration
+     * @return the renewed {@link Contract}
+     */
     public static Contract setupRenewContract(
             SecureRegularModeTransactionManager ctm,
             byte[] fullSerial,
@@ -551,6 +754,14 @@ public abstract class KeypleUtil {
         return wEfContract;
     }
 
+    /**
+     * Creates a secure regular mode transaction manager for a Calypso card.
+     *
+     * @param cardReader the reader hosting the card
+     * @param calypsoCard the selected Calypso card
+     * @param symmetricCryptoSecuritySetting the security settings to apply
+     * @return a {@link SecureRegularModeTransactionManager}
+     */
     public static SecureRegularModeTransactionManager prepareCardTransactionManger(
             CardReader cardReader,
             CalypsoCard calypsoCard,
