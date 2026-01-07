@@ -19,7 +19,11 @@ import lombok.var;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
+import org.eclipse.keypop.calypso.card.card.ElementaryFile;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 import java.util.SortedMap;
 
@@ -45,34 +49,34 @@ import java.util.SortedMap;
 @NoArgsConstructor
 public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTransactionContext> {
 
-    private CalypsoCardCDMX calypsoCardCDMX;
-    private TransactionResult<byte[]> readFile;
-    private TransactionResult<SortedMap<Integer, byte[]>> readFiles;
+    private final CalypsoCardCDMX calypsoCardCDMX = new CalypsoCardCDMX();
 
     @Override
     public TransactionResult<CalypsoCardCDMX> execute(KeypleTransactionContext context) {
-        // Initialize the card model to store the read data
-        calypsoCardCDMX = new CalypsoCardCDMX();
-        SecureRegularModeTransactionManager ctm = context.getCardTransactionManager();
-
-        // Ensure the reader session is up-to-date
         CalypsoCard calypsoCard = context.getKeypleCardReader().getCalypsoCard();
-
-        // Check if the Dedicated File (DF) is invalid
         calypsoCardCDMX.setEnabled(!calypsoCard.isDfInvalidated());
-
-        // Extract and set the card serial number
         calypsoCardCDMX.setSerial(HexUtil.toHex(calypsoCard.getApplicationSerialNumber()));
-        log.info("Reading card {}", calypsoCardCDMX.getSerial());
-
-        readLogFiles(ctm, calypsoCard);
-        readEnvironmentFile(context);
-        readEventFiles(context);
-        readContractFiles(context);
-
         calypsoCardCDMX.setCalypsoProduct(CalypsoProduct.parseByCalypsoCard(calypsoCard));
 
-//        cardTransactionManager.processCommands(ChannelControl.CLOSE_AFTER);
+        log.info("Reading card {}", calypsoCardCDMX.getSerial());
+
+        context.getCardTransactionManager()
+                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                .prepareReadRecord(Calypso.ENVIRONMENT_FILE, 1)
+                .prepareReadRecordsPartially(Calypso.EVENT_FILE, 1, 3, 0, 29)
+                .prepareReadRecordsPartially(Calypso.CONTRACT_FILE, 1, 8, 0, 29)
+                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                .prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
+
+        calypsoCardCDMX.setBalance(calypsoCardCDMX.getBalance());
+        ElementaryFile elementaryFileEnv = calypsoCard.getFileBySfi(Calypso.ENVIRONMENT_FILE);
+        calypsoCardCDMX.setEnvironment(new Environment().parse(elementaryFileEnv != null ? elementaryFileEnv.getData().getContent() : null));
+
+        readEventFiles(calypsoCard);
+        readContractFiles(calypsoCard);
+        readLogFiles(calypsoCard);
+
         return TransactionResult
                 .<CalypsoCardCDMX>builder()
                 .transactionStatus(TransactionStatus.OK)
@@ -82,37 +86,18 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
     }
 
     private void readLogFiles(
-            SecureRegularModeTransactionManager ctm,
             CalypsoCard calypsoCard) {
-        Logs logs = KeypleUtil.readCardLogs(ctm, calypsoCard);
-        calypsoCardCDMX.setDebitLog(logs.getDebitLog());
-        calypsoCardCDMX.setLoadLog(logs.getLoadLog());
-        calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
+        calypsoCardCDMX.setDebitLog(new DebitLog().parse(calypsoCard.getSvDebitLogLastRecord()));
+        calypsoCardCDMX.setLoadLog(new LoadLog().parse(calypsoCard.getSvLoadLogRecord()));
     }
 
-    private void readEnvironmentFile(KeypleTransactionContext context) {
-        byte[] bytesFiles = KeypleUtil.readCardFile(
-                context.getCardTransactionManager(),
-                context.getKeypleCardReader().getCalypsoCard(),
-                WriteAccessLevel.DEBIT,
-                Calypso.ENVIRONMENT_FILE,
-                1
-        );
+    private void readEventFiles(CalypsoCard calypsoCard) {
+        SortedMap<Integer, byte[]> readFilesBytes = calypsoCard.getFileBySfi(Calypso.EVENT_FILE)
+                .getData()
+                .getAllRecordsContent();
 
-        calypsoCardCDMX.setEnvironment(new Environment().parse(bytesFiles));
-    }
-
-    private void readEventFiles(KeypleTransactionContext context) {
-        SortedMap<Integer, byte[]> readFilesBytes = KeypleUtil.readCardPartially(
-                context.getCardTransactionManager(),
-                context.getKeypleCardReader().getCalypsoCard(),
-                WriteAccessLevel.DEBIT,
-                Calypso.EVENT_FILE,
-                (byte) 1,
-                (byte) 3,
-                0,
-                29
-        );
+        if (readFilesBytes == null)
+            return;
 
         Events events = new Events();
         for (var entry : readFilesBytes.entrySet()) {
@@ -121,17 +106,13 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
         calypsoCardCDMX.setEvents(events);
     }
 
-    private void readContractFiles(KeypleTransactionContext context) {
-        SortedMap<Integer, byte[]> readFilesBytes = KeypleUtil.readCardPartially(
-                context.getCardTransactionManager(),
-                context.getKeypleCardReader().getCalypsoCard(),
-                WriteAccessLevel.DEBIT,
-                Calypso.CONTRACT_FILE,
-                (byte) 1,
-                (byte) 3,
-                0,
-                29
-        );
+    private void readContractFiles(CalypsoCard calypsoCard) {
+        SortedMap<Integer, byte[]> readFilesBytes = calypsoCard.getFileBySfi(Calypso.CONTRACT_FILE)
+                .getData()
+                .getAllRecordsContent();
+
+        if (readFilesBytes == null)
+            return;
 
         Contracts contracts = new Contracts();
         for (var entry : readFilesBytes.entrySet()) {
