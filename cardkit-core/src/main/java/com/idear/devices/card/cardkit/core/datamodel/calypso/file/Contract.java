@@ -72,7 +72,7 @@ public class Contract extends File<Contract> {
 
     /** Contract issue date*/
     private CompactDate saleDate;
-    private int saleSam;
+    private String saleSam;
     private int saleCounter = 0;
     private int authKvc = 0;
     private int authenticator = 0;
@@ -108,7 +108,7 @@ public class Contract extends File<Contract> {
         bit.setNextInteger(periodJourney, 8);
         bit.setNextLong(location, 40);
         bit.setNextInteger(saleDate.getValue(), 16);
-        bit.setNextInteger(saleSam, 32);
+        bit.setNextInteger((int) Long.parseLong(saleSam, 16), 32);
         bit.setNextInteger(saleCounter, 24);
         bit.setNextInteger(authKvc, 8);
         bit.setNextInteger(authenticator, 24);
@@ -153,7 +153,7 @@ public class Contract extends File<Contract> {
         this.periodJourney        = data[10] & 0xff;
         this.location             = ByteUtils.extractLong(data, 11, 5, false);
         this.saleDate             = CompactDate.fromDays(ByteUtils.extractInt(data, 16, 2, false));
-        this.saleSam              = ByteUtils.extractInt(data, 18, 4, false);
+        this.saleSam              = String.format("%08X", ByteUtils.extractInt(data, 18, 4, false));
         this.saleCounter          = ByteUtils.extractInt(data, 22, 3, false);
         this.authKvc              = data[25] & 0xff;
         this.authenticator        = ByteUtils.extractInt(data, 26, 3, false);
@@ -161,6 +161,7 @@ public class Contract extends File<Contract> {
         return this;
     }
 
+    @JsonIgnore
     public LocalDate getExpirationDate() {
        return PeriodType.getExpirationDate(startDate, duration);
     }
@@ -171,7 +172,8 @@ public class Contract extends File<Contract> {
             int provider,
             int modality,
             int tariff,
-            int restrictTime) {
+            int restrictTime,
+            String saleSam) {
         Contract contract = new Contract(id);
 
 
@@ -180,6 +182,7 @@ public class Contract extends File<Contract> {
         contract.getModality().setValue(modality);
         contract.getTariff().setValue(tariff);
         contract.getRestrictTime().setValue(restrictTime);
+        contract.setSaleSam(saleSam);
 
         contract.getVersion().setValue(Version.VERSION_3_3);
         contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
