@@ -25,6 +25,13 @@ public class KeypleTransactionManager extends AbstractTransactionManager
 
     @Override
     protected KeypleTransactionContext createContext() {
+        samReader.setLegacySam(
+                KeypleUtil.selectAndUnlockSam(
+                        samReader.getSamReader(),
+                        samReader.getLockSecret()
+                )
+        );
+
         samReader.setSymmetricCryptoSettingsRT(
                 KeypleUtil.startSymmetricSecuritySettings(
                         samReader.getSamReader(),
@@ -178,12 +185,29 @@ public class KeypleTransactionManager extends AbstractTransactionManager
 
     public TransactionResult<TransactionDataEvent> purchaseCard(
             CalypsoCardCDMX calypsoCardCDMX,
-            Contract contract,
             int locationId,
+            int contractId,
+            int modality,
+            int tariff,
+            int restrictTime,
+            int duration,
             int provider,
             int passenger,
             int amount) {
-        return execute(new PurchaseCard(calypsoCardCDMX, contract, locationId, provider, passenger, amount));
+        return execute(
+                new PurchaseCard(
+                        calypsoCardCDMX,
+                        locationId,
+                        contractId,
+                        modality,
+                        tariff,
+                        restrictTime,
+                        duration,
+                        provider,
+                        passenger,
+                        amount
+                )
+        );
     }
     
     public TransactionResult<Boolean> personalization(
