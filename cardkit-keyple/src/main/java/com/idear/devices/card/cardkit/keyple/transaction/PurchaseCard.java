@@ -5,6 +5,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
@@ -12,31 +13,52 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
 @RequiredArgsConstructor
 public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
-    private final Contract contract;
     private final int locationId;
+    private final int contractId;
+    private final int modality;
+    private final int tariff;
+    private final int restrictTime;
+    private final int duration;
     private final int provider;
     private final int passenger;
     private final int amount;
 
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
 
-        contract.setDuration(PeriodType.encode(PeriodType.MONTH, 60));
-//        contract.setStartDate(ReverseDate.now());
-//        contract.getStatus().setValue(ContractStatus.CONTRACT_PARTLY_USED);
-//        contract.setSaleSam(context.getKeypleCalypsoSamReader().getSerial());
+        Contract contract = Contract.buildContract(
+                contractId,
+                context.getKeypleCalypsoSamReader().getSamNetworkCode(),
+                context.getKeypleCalypsoSamReader().getSamProviderCode().getValue(),
+                modality,
+                tariff,
+                restrictTime,
+                context.getKeypleCalypsoSamReader().getSerial()
+        );
+
+        Contract _contract = KeypleUtil.setupRenewContract(
+                context.getCardTransactionManager(),
+                HexUtil.toByteArray(calypsoCardCDMX.getSerial()),
+                contract,
+                provider,
+                ReverseDate.now(),
+                duration
+        );
 
         KeypleUtil.editCardFile(
                 context.getCardTransactionManager(),
                 WriteAccessLevel.PERSONALIZATION,
                 Calypso.CONTRACT_FILE,
-                contract.getId(),
-                contract.unparse()
+                _contract.getId(),
+                _contract.unparse(),
+                ChannelControl.KEEP_OPEN
         );
 
         Event event = Event.builEvent(
@@ -56,9 +78,10 @@ public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, Keyp
                 context.getKeypleCardReader().getCalypsoCard(),
                 context.getKeypleCalypsoSamReader(),
                 event,
-                contract,
+                _contract,
                 calypsoCardCDMX.getBalance(),
-                provider
+                provider,
+                ChannelControl.KEEP_OPEN
         );
 
         return TransactionResult
