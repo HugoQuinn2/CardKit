@@ -54,6 +54,7 @@ public class DebitCard
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Contract contract;
+    private final int transactionType;
     private final int locationId;
     private final int provider;
     private final int passenger;
@@ -63,49 +64,34 @@ public class DebitCard
 
     @Override
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
-        SecureRegularModeTransactionManager ctm = context.getCardTransactionManager();
-        KeypleCardReader cardReader = context.getKeypleCardReader();
-        CalypsoCard calypsoCard = cardReader.getCalypsoCard();
 
-        LocationCode locationCode = new LocationCode(this.locationId);
-        log.info("Debiting card {}.", calypsoCardCDMX.getSerial());
-
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime lastDebitDateTime = LocalDateTime.of(
-                calypsoCardCDMX.getDebitLog().getDate().getDate(),
-                calypsoCardCDMX.getDebitLog().getTime().getTime()
+        KeypleUtil.performDebit(
+                context.getCardTransactionManager(),
+                amount,
+                ChannelControl.KEEP_OPEN
         );
 
-        validatePassback(now, lastDebitDateTime);
-
-        Equipment equipment = locationCode.getEquipment();
-        validateProfileOnEquipment(equipment);
-        validateContract(provider);
-
-        int finalAmount = resolveDebitAmount();
-        KeypleUtil.performDebit(ctm, finalAmount);
-
-        TransactionType transactionType = determineTransactionType(finalAmount, equipment);
         Event event = Event.builEvent(
-          transactionType.getValue(),
-          calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
-          provider,
-          contract.getId(),
-          passenger,
-          getCalypsoCardCDMX().getEvents().getNextTransactionNumber(),
-          locationId,
-          finalAmount
+                transactionType,
+                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+                provider,
+                contract.getId(),
+                passenger,
+                getCalypsoCardCDMX().getEvents().getNextTransactionNumber(),
+                locationId,
+                amount
         );
 
         TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
-                ctm,
+                context.getCardTransactionManager(),
                 calypsoCardCDMX,
-                calypsoCard,
+                context.getKeypleCardReader().getCalypsoCard(),
                 context.getKeypleCalypsoSamReader(),
                 event,
                 contract,
                 calypsoCardCDMX.getBalance(),
-                provider
+                provider,
+                ChannelControl.KEEP_OPEN
         );
 
         return TransactionResult
@@ -181,7 +167,7 @@ public class DebitCard
      */
     private int resolveDebitAmount() {
         int finalAmount = amount;
-        if (!contract.getTariff().equals(Tariff.STORED_VALUE)) finalAmount = 0;
+//        if (!contract.getTariff().equals(Tariff.STORED_VALUE)) finalAmount = 0;
         if (finalAmount > MAX_POSSIBLE_AMOUNT)
             throw new CardException("amount cannot be greater than %s", MAX_POSSIBLE_AMOUNT);
 
