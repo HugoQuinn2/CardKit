@@ -25,6 +25,12 @@ public class KeypleTransactionManager extends AbstractTransactionManager
 
     @Override
     protected KeypleTransactionContext createContext() {
+        samReader.setSymmetricCryptoSettingsRT(
+                KeypleUtil.startSymmetricSecuritySettings(
+                        samReader.getSamReader(),
+                        samReader.getLegacySam()
+                ));
+
         ctm = KeypleUtil.prepareCardTransactionManger(
                 cardReader.getCardReader(),
                 cardReader.getCalypsoCard(),
