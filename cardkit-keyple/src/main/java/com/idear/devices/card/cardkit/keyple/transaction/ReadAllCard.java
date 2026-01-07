@@ -126,7 +126,7 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
                 context.getCardTransactionManager(),
                 context.getKeypleCardReader().getCalypsoCard(),
                 WriteAccessLevel.DEBIT,
-                Calypso.EVENT_FILE,
+                Calypso.CONTRACT_FILE,
                 (byte) 1,
                 (byte) 3,
                 0,
