@@ -770,12 +770,12 @@ public abstract class KeypleUtil {
         wEfContract.getStatus().setValue(0);
         wEfContract.setStartDate(ReverseDate.zero());
         wEfContract.setDuration(duration);
-        wEfContract.getNetwork().setValue(NetworkCode.CDMX);
+//        wEfContract.getNetwork().setValue(NetworkCode.CDMX);
         wEfContract.getProvider().setValue(provider);
-        wEfContract.getModality().setValue(Modality.MONOMODAL);
+//        wEfContract.getModality().setValue(Modality.MONOMODAL);
         wEfContract.getTariff().setValue(Tariff.STORED_VALUE);
         wEfContract.setJourneyInterChanges(1);
-        wEfContract.setSaleDate(CompactDate.now());
+//        wEfContract.setSaleDate(CompactDate.now());
         wEfContract.setAuthKvc((byte) 0xC4 & 0xff);
 
         // Compute contract signature
