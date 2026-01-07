@@ -69,7 +69,7 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
                 .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);
 
-        calypsoCardCDMX.setBalance(calypsoCardCDMX.getBalance());
+        calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
         ElementaryFile elementaryFileEnv = calypsoCard.getFileBySfi(Calypso.ENVIRONMENT_FILE);
         calypsoCardCDMX.setEnvironment(new Environment().parse(elementaryFileEnv != null ? elementaryFileEnv.getData().getContent() : null));
 
