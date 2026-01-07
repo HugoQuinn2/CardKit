@@ -91,36 +91,38 @@ public class RenewedCard extends AbstractTransaction<TransactionDataEvent, Keypl
                 _contract.getFileId(),
                 _contract.getId(),
                 _contract.unparse(),
-                ChannelControl.CLOSE_AFTER
+                ChannelControl.KEEP_OPEN
         );
 
-//        Event event = Event.builEvent(
-//                TransactionType.SV_CONTRACT_RENEWAL.getValue(),
-//                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
-//                provider,
-//                _contract.getId(),
-//                passenger,
-//                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
-//                locationId,
-//                0
-//        );
-//
-//        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
-//                context.getCardTransactionManager(),
-//                calypsoCardCDMX,
-//                context.getKeypleCardReader().getCalypsoCard(),
-//                context.getKeypleCalypsoSamReader(),
-//                event,
-//                _contract,
-//                calypsoCardCDMX.getBalance(),
-//                provider
-//        );
+        Event event = Event.builEvent(
+                TransactionType.SV_CONTRACT_RENEWAL.getValue(),
+                calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
+                provider,
+                _contract.getId(),
+                passenger,
+                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+                locationId,
+                0
+        );
+
+
+        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+                context.getCardTransactionManager(),
+                calypsoCardCDMX,
+                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCalypsoSamReader(),
+                event,
+                _contract,
+                calypsoCardCDMX.getBalance(),
+                provider,
+                ChannelControl.KEEP_OPEN
+        );
 
         return TransactionResult
                 .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
                 .message("card contract renewed, expiration date: " + _contract.getExpirationDate(0))
-                .data(null)
+                .data(transactionDataEvent)
                 .build();
     }
 
