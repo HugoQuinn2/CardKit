@@ -16,6 +16,7 @@ import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamExtensionService;
+import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamUtil;
 import org.eclipse.keyple.card.generic.CardTransactionManager;
 import org.eclipse.keyple.card.generic.TransactionException;
 import org.eclipse.keyple.core.service.Plugin;
@@ -25,28 +26,26 @@ import org.eclipse.keyple.core.util.ByteArrayUtil;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keyple.plugin.pcsc.PcscPluginFactoryBuilder;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
+import org.eclipse.keypop.calypso.card.PutDataTag;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
 import org.eclipse.keypop.calypso.card.card.ElementaryFile;
 import org.eclipse.keypop.calypso.card.transaction.*;
+import org.eclipse.keypop.calypso.card.transaction.FreeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.spi.SymmetricCryptoCardTransactionManagerFactory;
+import org.eclipse.keypop.calypso.crypto.legacysam.GetDataTag;
 import org.eclipse.keypop.calypso.crypto.legacysam.LegacySamApiFactory;
 import org.eclipse.keypop.calypso.crypto.legacysam.sam.LegacySam;
 import org.eclipse.keypop.calypso.crypto.legacysam.sam.LegacySamSelectionExtension;
-import org.eclipse.keypop.calypso.crypto.legacysam.transaction.CardTransactionLegacySamExtension;
-import org.eclipse.keypop.calypso.crypto.legacysam.transaction.SamTraceabilityMode;
-import org.eclipse.keypop.calypso.crypto.legacysam.transaction.TraceableSignatureComputationData;
+import org.eclipse.keypop.calypso.crypto.legacysam.transaction.*;
 import org.eclipse.keypop.reader.CardReader;
 import org.eclipse.keypop.reader.ReaderApiFactory;
-import org.eclipse.keypop.reader.selection.BasicCardSelector;
-import org.eclipse.keypop.reader.selection.CardSelectionManager;
-import org.eclipse.keypop.reader.selection.CardSelector;
+import org.eclipse.keypop.reader.selection.*;
 import org.eclipse.keypop.reader.selection.spi.SmartCard;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.SortedMap;
+import java.time.LocalDate;
+import java.util.*;
 
 import static com.idear.devices.card.cardkit.keyple.KeypleCardReader.calypsoCardApiFactory;
 
@@ -241,6 +240,32 @@ public abstract class KeypleUtil {
         return elementaryFile.getData().getContent();
     }
 
+    public static Map<Byte, byte[]> readCardFile(
+            SecureRegularModeTransactionManager ctm,
+            CalypsoCard calypsoCard,
+            WriteAccessLevel writeAccessLevel,
+            Map<Byte, Integer> fileAndRecord,
+            ChannelControl channelControl) {
+        Map<Byte, byte[]> filesData = new HashMap<>();
+        ctm
+                .prepareOpenSecureSession(writeAccessLevel)
+                .prepareSvGet(SvOperation.DEBIT, SvAction.DO);
+
+        for (Map.Entry<Byte, Integer> entry : fileAndRecord.entrySet()) {
+            ctm.prepareReadRecord(entry.getKey(), entry.getValue());
+        }
+
+        ctm.prepareCloseSecureSession().processCommands(channelControl);
+
+        for (Map.Entry<Byte, Integer> entry : fileAndRecord.entrySet()) {
+            ElementaryFile elementaryFile = calypsoCard.getFileBySfi(entry.getKey());
+            if (elementaryFile != null)
+                filesData.put(entry.getKey(), elementaryFile.getData().getContent());
+        }
+
+        return filesData;
+    }
+
     /**
      * Reads a portion of records from a card file.
      *
@@ -353,7 +378,6 @@ public abstract class KeypleUtil {
             ctm
                     .prepareOpenSecureSession(writeAccessLevel)
                     .prepareUpdateRecord(fileId, record, data)
-                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
                     .prepareCloseSecureSession()
                     .processCommands(channelControl);
         } catch (Exception e) {
@@ -401,7 +425,8 @@ public abstract class KeypleUtil {
             Event event,
             Contract contract,
             int initBalance,
-            int provider) {
+            int provider,
+            ChannelControl channelControl) {
         String mac = "";
         TransactionType transactionType = event.getTransactionType().decode(TransactionType.RFU);
         if (transactionType.isSigned())
@@ -410,9 +435,7 @@ public abstract class KeypleUtil {
         Logs logs = readCardLogs(ctm, calypsoCard);
 
         if (transactionType.isWritten())
-            appendEditCardFile(ctm, WriteAccessLevel.LOAD, Calypso.EVENT_FILE, event.unparse(), ChannelControl.CLOSE_AFTER);
-        else
-            ctm.processCommands(ChannelControl.CLOSE_AFTER);
+            appendEditCardFile(ctm, WriteAccessLevel.DEBIT, Calypso.EVENT_FILE, event.unparse(), channelControl);
 
         return TransactionDataEvent
                 .builder()
@@ -426,6 +449,31 @@ public abstract class KeypleUtil {
                 .balanceBeforeTransaction(initBalance)
                 .locationCode(event.getLocationId())
                 .build();
+    }
+
+    /**
+     * Saves a transaction event on the card and builds the corresponding event data.
+     *
+     * @param ctm the transaction manager
+     * @param calypsoCardCDMX the CDMX-specific Calypso card model
+     * @param calypsoCard the Calypso card
+     * @param keypleCalypsoSamReader the SAM reader wrapper
+     * @param event the event to save
+     * @param contract the related contract
+     * @param initBalance the balance before the transaction
+     * @param provider the service provider identifier
+     * @return the generated {@link TransactionDataEvent}
+     */
+    public static TransactionDataEvent saveEvent(
+            SecureRegularModeTransactionManager ctm,
+            CalypsoCardCDMX calypsoCardCDMX,
+            CalypsoCard calypsoCard,
+            KeypleCalypsoSamReader keypleCalypsoSamReader,
+            Event event,
+            Contract contract,
+            int initBalance,
+            int provider) {
+        return saveEvent(ctm, calypsoCardCDMX, calypsoCard, keypleCalypsoSamReader, event, contract, initBalance, provider, ChannelControl.KEEP_OPEN);
     }
 
     /**
@@ -621,11 +669,16 @@ public abstract class KeypleUtil {
      */
     public static void invalidateCard(
             SecureRegularModeTransactionManager ctm) {
+        invalidateCard(ctm, ChannelControl.KEEP_OPEN);
+    }
+
+    public static void invalidateCard(
+            SecureRegularModeTransactionManager ctm, ChannelControl channelControl) {
         ctm
                 .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                 .prepareInvalidate()
                 .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+                .processCommands(channelControl);
     }
 
     /**
@@ -773,6 +826,126 @@ public abstract class KeypleUtil {
                         calypsoCard,
                         symmetricCryptoSecuritySetting
                 );
+    }
+
+    public static LegacySam selectLegacySamByProduct(
+            CardReader samReader,
+            LegacySam.ProductType productType) {
+        // Create a SAM selection manager.
+        CardSelectionManager samSelectionManager = KeypleUtil.READER_API_FACTORY.createCardSelectionManager();
+
+        // Create a card selector without filer
+        IsoCardSelector cardSelector =
+                KeypleUtil.READER_API_FACTORY
+                        .createIsoCardSelector()
+                        .filterByPowerOnData(
+                                LegacySamUtil.buildPowerOnDataFilter(productType, null));
+
+        LegacySamApiFactory legacySamApiFactory =
+                LegacySamExtensionService.getInstance().getLegacySamApiFactory();
+
+        // Create a SAM selection using the Calypso card extension.
+        samSelectionManager.prepareSelection(
+                cardSelector, legacySamApiFactory.createLegacySamSelectionExtension());
+
+        // SAM communication: run the selection scenario.
+        CardSelectionResult samSelectionResult =
+                samSelectionManager.processCardSelectionScenario(samReader);
+
+        // Check the selection result.
+        if (samSelectionResult.getActiveSmartCard() == null) {
+            throw new SamException("The selection of the SAM failed, product " + productType + " required on sam");
+        }
+
+        return (LegacySam) samSelectionResult.getActiveSmartCard();
+    }
+
+    public static void cardSamKeyPair(
+            CardReader cardReader,
+            CardReader samReader,
+            LegacySam legacySam,
+            CalypsoCard calypsoCard,
+            LocalDate startDate,
+            LocalDate endDate) {
+        FreeTransactionManager freeTransactionManager = CalypsoExtensionService.getInstance().getCalypsoCardApiFactory()
+                .createFreeTransactionManager(cardReader, calypsoCard);
+        try {
+            freeTransactionManager
+                    .prepareGenerateAsymmetricKeyPair()
+                    .prepareGetData(org.eclipse.keypop.calypso.card.GetDataTag.CARD_PUBLIC_KEY)
+                    .processCommands(ChannelControl.KEEP_OPEN);
+        } catch (Exception e) {
+            throw new CardException("Error making ECC key pair: " + e.getMessage());
+        }
+
+        LegacyCardCertificateComputationData cardCertificateComputationData =
+                KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+                        .createLegacyCardCertificateComputationData()
+                        .setCardAid(calypsoCard.getDfName())
+                        .setCardSerialNumber(calypsoCard.getApplicationSerialNumber())
+                        .setStartDate(startDate)
+                        .setEndDate(endDate)
+                        .setCardStartupInfo(calypsoCard.getStartupInfoRawData());
+
+        try {
+            KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+                    .createFreeTransactionManager(samReader, legacySam)
+                    .prepareGetData(GetDataTag.CA_CERTIFICATE)
+                    .prepareComputeCardCertificate(cardCertificateComputationData)
+                    .processCommands();
+        } catch (Exception e) {
+            throw new SamException("Error generating PKI sam certification: " + e.getMessage());
+        }
+
+        try {
+            CalypsoExtensionService.getInstance().getCalypsoCardApiFactory()
+                    .createFreeTransactionManager(cardReader, calypsoCard)
+                    .preparePutData(PutDataTag.CA_CERTIFICATE, legacySam.getCaCertificate())
+                    .preparePutData(PutDataTag.CARD_CERTIFICATE, cardCertificateComputationData.getCertificate())
+                    .processCommands(ChannelControl.KEEP_OPEN);
+        } catch (Exception e) {
+            throw new CardException("Error putting sam certification data on card: " + e.getMessage());
+        }
+    }
+
+    public static void legacySamKeyPair(
+            CardReader cardReader,
+            CardReader samReader,
+            LegacySam legacySam,
+            CalypsoCard calypsoCard,
+            LocalDate startDate,
+            LocalDate endDate) {
+        KeyPairContainer keyPairContainer = KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory().createKeyPairContainer();
+        LegacyCardCertificateComputationData cardCertificateComputationData =
+                KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+                        .createLegacyCardCertificateComputationData()
+                        .setCardAid(calypsoCard.getDfName())
+                        .setCardSerialNumber(calypsoCard.getApplicationSerialNumber())
+                        .setStartDate(startDate)
+                        .setEndDate(endDate)
+                        .setCardStartupInfo(calypsoCard.getStartupInfoRawData());
+
+        try {
+            KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+                    .createFreeTransactionManager(samReader, legacySam)
+                    .prepareGetData(GetDataTag.CA_CERTIFICATE)
+                    .prepareGenerateCardAsymmetricKeyPair(keyPairContainer)
+                    .prepareComputeCardCertificate(cardCertificateComputationData)
+                    .processCommands();
+        } catch (Exception e) {
+            throw new SamException("Error generating PKI sam certification: " + e.getMessage());
+        }
+
+        try {
+            CalypsoExtensionService.getInstance().getCalypsoCardApiFactory()
+                    .createFreeTransactionManager(cardReader, calypsoCard)
+                    .preparePutData(PutDataTag.CA_CERTIFICATE, legacySam.getCaCertificate())
+                    .preparePutData(PutDataTag.CARD_KEY_PAIR, keyPairContainer.getKeyPair())
+                    .preparePutData(PutDataTag.CA_CERTIFICATE, cardCertificateComputationData.getCertificate())
+                    .processCommands(ChannelControl.KEEP_OPEN);
+        }catch (Exception e) {
+            throw new CardException("Error putting sam certification data on card: " + e.getMessage());
+        }
     }
 
 }
