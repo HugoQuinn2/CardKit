@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
@@ -10,6 +11,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
+
+import java.time.LocalDateTime;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -72,5 +75,10 @@ public class DebitLog extends File<DebitLog> {
 
         setContent(HexUtil.toHex(data.getRawData()));
         return this;
+    }
+
+    @JsonIgnore
+    public LocalDateTime getLocalDateTime() {
+        return LocalDateTime.of(date.getDate(), time.getTime());
     }
 }
