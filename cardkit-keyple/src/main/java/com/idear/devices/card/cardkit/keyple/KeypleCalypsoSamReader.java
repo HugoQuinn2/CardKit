@@ -49,12 +49,10 @@ public class KeypleCalypsoSamReader extends AbstractReader implements IBasicRead
     private LegacySam legacySam;
     @ToString.Exclude
     private CardReader samReader;
-
     @ToString.Exclude
     private CardTransactionManager genericSamTransactionManager;
     @ToString.Exclude
     private SymmetricCryptoSecuritySetting symmetricCryptoSettingsRT;
-    private FreeTransactionManager freeTransactionManager;
 
     private boolean waitingForCardPresent;
     private boolean waitingForCardAbsent;
@@ -129,45 +127,7 @@ public class KeypleCalypsoSamReader extends AbstractReader implements IBasicRead
     public void disconnectFromCard() {
         legacySam = null;
         serial = "";
-        freeTransactionManager = null;
         genericSamTransactionManager = null;
-    }
-
-    @Override
-    public void waitForCardPresent(long l) {
-        long start = System.currentTimeMillis();
-        waitingForCardPresent = true;
-        while (waitingForCardPresent) {
-            if (isCardOnReader())
-                break;
-
-            if (l > 0 && (System.currentTimeMillis() - start) >= l)
-                break;
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ignored) {
-            }
-        }
-        connectToCard();
-        waitingForCardPresent = false;
-    }
-
-    @Override
-    public void waitForCarAbsent(long l) {
-        long start = System.currentTimeMillis();
-        waitingForCardAbsent = true;
-        while (waitingForCardPresent) {
-            if (!isCardOnReader())
-                break;
-
-            if (l > 0 && (System.currentTimeMillis() - start) >= l)
-                break;
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ignored) {
-            }
-        }
-        waitingForCardAbsent = false;
     }
 
     @Override

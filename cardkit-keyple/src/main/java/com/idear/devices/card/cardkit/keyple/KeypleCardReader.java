@@ -61,23 +61,14 @@ import java.util.Set;
 @Data
 public class KeypleCardReader extends AbstractReader implements IBasicReader {
 
-    /** The name of the physical card reader. */
     private final String readerName;
     private final String aid;
 
-    /** The associated Calypso SAM instance used for secure transactions. */
-    private KeypleCalypsoSamReader keypleCalypsoSamReader;
-    /** Manager responsible for Calypso secure regular transactions. */
     @ToString.Exclude
-    private SecureRegularModeTransactionManager cardTransactionManager;
-    private FreeTransactionManager freeTransactionManager;
     private CardTransactionManager genericTransactionManager;
-    /** Manages card selection and filtering based on AIDs. */
     @ToString.Exclude
-    private CardSelectionManager cardSelectionManager;
-    /** The underlying physical card reader instance. */
     private CardReader cardReader;
-    /** Represents the currently selected Calypso card. */
+    @ToString.Exclude
     private CalypsoCard calypsoCard;
 
 
@@ -91,9 +82,6 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
     public static final CalypsoCardApiFactory calypsoCardApiFactory = calypsoExtensionService.getCalypsoCardApiFactory();
     @ToString.Exclude
     private final List<EventListener> cardEventListenerList = new ArrayList<>();
-
-    private boolean waitingForCardPresent;
-    private boolean waitingForCardAbsent;
 
     /**
      * Initializes the reader by binding to the physical PCSC reader
@@ -140,46 +128,7 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
     @Override
     public void disconnectFromCard() {
         calypsoCard = null;
-        freeTransactionManager = null;
-        cardTransactionManager = null;
-    }
-
-    @Override
-    public void waitForCardPresent(long l) {
-        long start = System.currentTimeMillis();
-        waitingForCardPresent = true;
-        while (waitingForCardPresent) {
-            if (isCardOnReader())
-                break;
-
-            if (l > 0 && (System.currentTimeMillis() - start) >= l)
-                break;
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ignored) {
-            }
-        }
-        connectToCard();
-        waitingForCardPresent = false;
-    }
-
-    @Override
-    public void waitForCarAbsent(long l) {
-        long start = System.currentTimeMillis();
-        waitingForCardAbsent = true;
-        while (waitingForCardAbsent) {
-            if (!isCardOnReader())
-                break;
-
-            if (l > 0 && (System.currentTimeMillis() - start) >= l)
-                break;
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ignored) {
-            }
-        }
-        disconnectFromCard();
-        waitingForCardAbsent = false;
+        genericTransactionManager = null;
     }
 
     public void fireCardEvent(TransactionDataEvent transactionDataEvent) {
