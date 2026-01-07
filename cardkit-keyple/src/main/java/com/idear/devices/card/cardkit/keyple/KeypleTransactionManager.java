@@ -7,7 +7,6 @@ import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransactionMan
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.keyple.transaction.*;
 import lombok.Getter;
-import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 
 import java.time.LocalDate;
@@ -178,7 +177,7 @@ public class KeypleTransactionManager extends AbstractTransactionManager
             int provider,
             int passenger,
             int amount) {
-        return execute(new SellCard(calypsoCardCDMX, contract, locationId, provider, passenger, amount));
+        return execute(new PurchaseCard(calypsoCardCDMX, contract, locationId, provider, passenger, amount));
     }
     
     public TransactionResult<Boolean> personalization(

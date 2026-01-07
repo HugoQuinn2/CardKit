@@ -3,28 +3,19 @@ package com.idear.devices.card.cardkit.keyple.transaction;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
-import com.idear.devices.card.cardkit.core.utils.ByteUtils;
-import com.idear.devices.card.cardkit.core.utils.Strings;
-import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
-import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
-import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
-import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 
-import java.util.Optional;
-
 @RequiredArgsConstructor
-public class SellCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
+public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
     private final CalypsoCardCDMX calypsoCardCDMX;
     private final Contract contract;
