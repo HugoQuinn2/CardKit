@@ -247,15 +247,16 @@ public abstract class KeypleUtil {
             Map<Byte, Integer> fileAndRecord,
             ChannelControl channelControl) {
         Map<Byte, byte[]> filesData = new HashMap<>();
-        ctm
-                .prepareOpenSecureSession(writeAccessLevel)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO);
+        ctm.prepareOpenSecureSession(writeAccessLevel);
 
         for (Map.Entry<Byte, Integer> entry : fileAndRecord.entrySet()) {
             ctm.prepareReadRecord(entry.getKey(), entry.getValue());
         }
 
-        ctm.prepareCloseSecureSession().processCommands(channelControl);
+        ctm
+                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                .prepareCloseSecureSession()
+                .processCommands(channelControl);
 
         for (Map.Entry<Byte, Integer> entry : fileAndRecord.entrySet()) {
             ElementaryFile elementaryFile = calypsoCard.getFileBySfi(entry.getKey());
