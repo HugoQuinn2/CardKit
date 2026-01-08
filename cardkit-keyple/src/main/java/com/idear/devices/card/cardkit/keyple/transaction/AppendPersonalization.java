@@ -24,7 +24,7 @@ public class AppendPersonalization extends AbstractTransaction<Boolean, KeypleTr
                 WriteAccessLevel.PERSONALIZATION,
                 fileId,
                 data,
-                ChannelControl.CLOSE_AFTER
+                ChannelControl.KEEP_OPEN
         );
 
         return TransactionResult

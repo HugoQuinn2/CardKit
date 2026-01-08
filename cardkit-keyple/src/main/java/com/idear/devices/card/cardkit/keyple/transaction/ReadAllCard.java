@@ -60,22 +60,26 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
 
         log.info("Reading card {}", calypsoCardCDMX.getSerial());
 
-        context.getCardTransactionManager()
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-                .prepareReadRecord(Calypso.ENVIRONMENT_FILE, 1)
-                .prepareReadRecordsPartially(Calypso.EVENT_FILE, 1, 3, 0, 29)
-                .prepareReadRecordsPartially(Calypso.CONTRACT_FILE, 1, 8, 0, 29)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+        try {
+            context.getCardTransactionManager()
+                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                    .prepareReadRecord(Calypso.ENVIRONMENT_FILE, 1)
+                    .prepareReadRecordsPartially(Calypso.EVENT_FILE, 1, 3, 0, 29)
+                    .prepareReadRecordsPartially(Calypso.CONTRACT_FILE, 1, 8, 0, 29)
+                    .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                    .prepareCloseSecureSession()
+                    .processCommands(ChannelControl.KEEP_OPEN);
 
-        calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
-        ElementaryFile elementaryFileEnv = calypsoCard.getFileBySfi(Calypso.ENVIRONMENT_FILE);
-        calypsoCardCDMX.setEnvironment(new Environment().parse(elementaryFileEnv != null ? elementaryFileEnv.getData().getContent() : null));
+            calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
+            ElementaryFile elementaryFileEnv = calypsoCard.getFileBySfi(Calypso.ENVIRONMENT_FILE);
+            calypsoCardCDMX.setEnvironment(new Environment().parse(elementaryFileEnv != null ? elementaryFileEnv.getData().getContent() : null));
 
-        readEventFiles(calypsoCard);
-        readContractFiles(calypsoCard);
-        readLogFiles(calypsoCard);
+            readEventFiles(calypsoCard);
+            readContractFiles(calypsoCard);
+            readLogFiles(calypsoCard);
+        } catch (Exception exception) {
+            log.debug("Error reading files card data: {}", exception.getMessage());
+        }
 
         return TransactionResult
                 .<CalypsoCardCDMX>builder()

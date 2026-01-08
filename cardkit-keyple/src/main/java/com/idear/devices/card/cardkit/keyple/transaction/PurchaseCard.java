@@ -13,10 +13,14 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
+import java.time.LocalDate;
+
+@Slf4j
 @RequiredArgsConstructor
 public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
 
@@ -32,6 +36,8 @@ public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, Keyp
     private final int amount;
 
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
+        log.info("Purchasing card {}, modality: {}, tariff: {}, expiration: {}, restrict: {}",
+                calypsoCardCDMX.getSerial(), modality, tariff, PeriodType.getExpirationDate(LocalDate.now(), duration), restrictTime);
 
         Contract contract = Contract.buildContract(
                 contractId,
@@ -54,7 +60,7 @@ public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, Keyp
 
         KeypleUtil.editCardFile(
                 context.getCardTransactionManager(),
-                WriteAccessLevel.PERSONALIZATION,
+                WriteAccessLevel.LOAD,
                 Calypso.CONTRACT_FILE,
                 _contract.getId(),
                 _contract.unparse(),
