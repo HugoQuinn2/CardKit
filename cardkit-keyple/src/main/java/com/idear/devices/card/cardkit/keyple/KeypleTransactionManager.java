@@ -5,17 +5,32 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransactionManager;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
+import com.idear.devices.card.cardkit.keyple.event.CardEvent;
+import com.idear.devices.card.cardkit.keyple.event.CardStatus;
+import com.idear.devices.card.cardkit.keyple.event.ICardEvent;
 import com.idear.devices.card.cardkit.keyple.transaction.*;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
+import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Getter
+@Slf4j
 public class KeypleTransactionManager extends AbstractTransactionManager
         <KeypleCardReader, KeypleCalypsoSamReader, KeypleTransactionContext> {
 
-    private SecureRegularModeTransactionManager ctm;
+    private volatile  SecureRegularModeTransactionManager ctm;
+    private final ExecutorService executorCardMonitor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executorCardEvent = Executors.newSingleThreadExecutor();
+    private final List<ICardEvent> cardEventList = new ArrayList<>();
 
     public KeypleTransactionManager(
             KeypleCardReader cardReader,
@@ -23,33 +38,52 @@ public class KeypleTransactionManager extends AbstractTransactionManager
         super(cardReader, samReader);
     }
 
+    private void cardMonitor() {
+        while (true) {
+            try {
+                cardReader.waitForCardPresent(0);
+                ctm = KeypleUtil.prepareCardTransactionManger(
+                        cardReader.getCardReader(),
+                        cardReader.getCalypsoCard(),
+                        samReader.getSymmetricCryptoSettingsRT()
+                );
+                notifyListeners(new CardEvent(cardReader, CardStatus.CARD_PRESENT));
+                cardReader.waitForCarAbsent(0);
+                ctm.processCommands(ChannelControl.CLOSE_AFTER);
+                notifyListeners(new CardEvent(cardReader, CardStatus.CARD_ABSENT));
+            } catch (Exception e) {
+                log.error("card monitor error", e);
+            } finally {
+                ctm = null;
+            }
+        }
+    }
+
+    private void notifyListeners(CardEvent event) {
+        for (ICardEvent cardEvent : cardEventList)
+            executorCardEvent.submit(() -> cardEvent.onEvent(event));
+    }
+
+    public void startCardMonitor() {
+        executorCardMonitor.submit(this::cardMonitor);
+    }
+
     @Override
     protected KeypleTransactionContext createContext() {
-        samReader.setLegacySam(
-                KeypleUtil.selectAndUnlockSam(
-                        samReader.getSamReader(),
-                        samReader.getLockSecret()
-                )
-        );
-
-        samReader.setSymmetricCryptoSettingsRT(
-                KeypleUtil.startSymmetricSecuritySettings(
-                        samReader.getSamReader(),
-                        samReader.getLegacySam()
-                ));
-
-        ctm = KeypleUtil.prepareCardTransactionManger(
-                cardReader.getCardReader(),
-                cardReader.getCalypsoCard(),
-                samReader.getSymmetricCryptoSettingsRT()
-        );
-
         return KeypleTransactionContext
                 .builder()
                 .cardTransactionManager(ctm)
                 .keypleCalypsoSamReader(samReader)
                 .keypleCardReader(cardReader)
                 .build();
+    }
+
+    public TransactionResult<Boolean> openSession(WriteAccessLevel writeAccessLevel) {
+        return execute(new OpenSession(writeAccessLevel));
+    }
+
+    public TransactionResult<Boolean> closeSession() {
+        return execute(new CloseSession());
     }
 
     public TransactionResult<CalypsoCardCDMX> readCardData() {
