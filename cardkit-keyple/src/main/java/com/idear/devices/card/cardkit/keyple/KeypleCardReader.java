@@ -63,16 +63,6 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
     @ToString.Exclude
     private CalypsoCard calypsoCard;
 
-
-    // Start Pcsc plugin
-    @ToString.Exclude
-    public static final SmartCardService smartCardService = SmartCardServiceProvider.getService();
-
-    @ToString.Exclude
-    public static final CalypsoExtensionService calypsoExtensionService = CalypsoExtensionService.getInstance();
-    @ToString.Exclude
-    public static final CalypsoCardApiFactory calypsoCardApiFactory = calypsoExtensionService.getCalypsoCardApiFactory();
-
     /**
      * Initializes the reader by binding to the physical PCSC reader
      * and initializing the associated SAM.
@@ -81,7 +71,7 @@ public class KeypleCardReader extends AbstractReader implements IBasicReader {
      */
     @Override
     public void connect() throws Exception {
-        cardReader = KeypleUtil.getCardReaderMatchingName(readerName);
+        cardReader = KeypleUtil.getCardReaderMatchingName(readerName, true);
     }
 
     @Override

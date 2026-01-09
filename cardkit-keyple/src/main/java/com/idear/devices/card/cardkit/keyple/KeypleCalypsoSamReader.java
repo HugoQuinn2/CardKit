@@ -93,7 +93,7 @@ public class KeypleCalypsoSamReader extends AbstractReader implements IBasicRead
 
     @Override
     public void connect() throws Exception {
-        samReader = KeypleUtil.getCardReaderMatchingName(samName);
+        samReader = KeypleUtil.getCardReaderMatchingName(samName, false);
         connectToCard();
     }
 
