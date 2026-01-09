@@ -4,7 +4,6 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
-import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.CalypsoProduct;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
@@ -14,14 +13,12 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-//import lombok.var;
 import lombok.var;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.card.ElementaryFile;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
-import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
 import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
@@ -56,18 +53,18 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
         CalypsoCard calypsoCard = context.getKeypleCardReader().getCalypsoCard();
         calypsoCardCDMX.setEnabled(!calypsoCard.isDfInvalidated());
         calypsoCardCDMX.setSerial(HexUtil.toHex(calypsoCard.getApplicationSerialNumber()));
-        calypsoCardCDMX.setCalypsoProduct(CalypsoProduct.parseByCalypsoCard(calypsoCard));
+        calypsoCardCDMX.setCalypsoProduct(parseByCalypsoCard(calypsoCard));
 
         log.info("Reading card {}", calypsoCardCDMX.getSerial());
 
         try {
             context.getCardTransactionManager()
-                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+//                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                     .prepareReadRecord(Calypso.ENVIRONMENT_FILE, 1)
                     .prepareReadRecordsPartially(Calypso.EVENT_FILE, 1, 3, 0, 29)
                     .prepareReadRecordsPartially(Calypso.CONTRACT_FILE, 1, 8, 0, 29)
                     .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                    .prepareCloseSecureSession()
+//                    .prepareCloseSecureSession()
                     .processCommands(ChannelControl.KEEP_OPEN);
 
             calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());
@@ -123,6 +120,25 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
             contracts.add(new Contract(entry.getKey()).parse(entry.getValue()));
         }
         calypsoCardCDMX.setContracts(contracts);
+    }
+
+    private CalypsoProduct parseByCalypsoCard(CalypsoCard calypsoCard) {
+        if (calypsoCard.isHce())
+            return CalypsoProduct.CALYPSO_HCE;
+
+        switch (calypsoCard.getProductType()) {
+            case PRIME_REVISION_1:
+            case PRIME_REVISION_2:
+            case PRIME_REVISION_3:
+                return CalypsoProduct.CALYPSO_PRIME;
+            case LIGHT:
+                return CalypsoProduct.CALYPSO_LIGHT;
+            case BASIC:
+                return CalypsoProduct.CALYPSO_BASIC;
+            case UNKNOWN:
+            default:
+                return CalypsoProduct.RFU;
+        }
     }
 
 }
