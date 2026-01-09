@@ -14,17 +14,21 @@ import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.io.reader.GenericApduResponse;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamUtil;
 import org.eclipse.keyple.card.generic.CardTransactionManager;
 import org.eclipse.keyple.card.generic.TransactionException;
-import org.eclipse.keyple.core.service.Plugin;
+import org.eclipse.keyple.core.service.ObservablePlugin;
 import org.eclipse.keyple.core.service.SmartCardService;
 import org.eclipse.keyple.core.service.SmartCardServiceProvider;
 import org.eclipse.keyple.core.util.ByteArrayUtil;
 import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keyple.plugin.pcsc.PcscPluginFactoryBuilder;
+import org.eclipse.keyple.plugin.pcsc.PcscReader;
+import org.eclipse.keyple.plugin.pcsc.PcscSupportedContactProtocol;
+import org.eclipse.keyple.plugin.pcsc.PcscSupportedContactlessProtocol;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.PutDataTag;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
@@ -40,14 +44,13 @@ import org.eclipse.keypop.calypso.crypto.legacysam.sam.LegacySam;
 import org.eclipse.keypop.calypso.crypto.legacysam.sam.LegacySamSelectionExtension;
 import org.eclipse.keypop.calypso.crypto.legacysam.transaction.*;
 import org.eclipse.keypop.reader.CardReader;
+import org.eclipse.keypop.reader.ConfigurableCardReader;
 import org.eclipse.keypop.reader.ReaderApiFactory;
 import org.eclipse.keypop.reader.selection.*;
 import org.eclipse.keypop.reader.selection.spi.SmartCard;
 
 import java.time.LocalDate;
 import java.util.*;
-
-import static com.idear.devices.card.cardkit.keyple.KeypleCardReader.calypsoCardApiFactory;
 
 /**
  * Utility class providing helper methods to interact with Calypso cards and
@@ -65,11 +68,17 @@ import static com.idear.devices.card.cardkit.keyple.KeypleCardReader.calypsoCard
  * <p>
  * All methods are static and the class is not intended to be instantiated.
  */
+@Slf4j
 public abstract class KeypleUtil {
 
     public static final SmartCardService SMART_CARD_SERVICE = SmartCardServiceProvider.getService();
     public static final ReaderApiFactory READER_API_FACTORY = SMART_CARD_SERVICE.getReaderApiFactory();
-    public static final Plugin PLUGIN = SMART_CARD_SERVICE.registerPlugin(PcscPluginFactoryBuilder.builder().build());
+    public static final CalypsoExtensionService CALYPSO_EXTENSION_SERVICE = CalypsoExtensionService.getInstance();
+    public static final CalypsoCardApiFactory CALYPSO_CARD_API_FACTORY = CALYPSO_EXTENSION_SERVICE.getCalypsoCardApiFactory();
+    public static final LegacySamApiFactory LEGACY_SAM_API_FACTORY = LegacySamExtensionService.getInstance().getLegacySamApiFactory();
+
+    public static final ObservablePlugin PLUGIN = (ObservablePlugin) SMART_CARD_SERVICE.registerPlugin(
+            PcscPluginFactoryBuilder.builder().setCardMonitoringCycleDuration(5).build());
 
     /**
      * Returns the first card reader whose name matches the given regular expression.
@@ -79,17 +88,35 @@ public abstract class KeypleUtil {
      * @throws RuntimeException if no readers are available or none match the pattern
      */
     public static CardReader getCardReaderMatchingName(
-            String matchName) {
-        Set<String> setReaderNames = PLUGIN.getReaderNames();
+            String matchName,
+            boolean isContactless) {
+        CardReader reader = PLUGIN.getReaders().stream()
+                .filter(r -> r.getName().matches(matchName))
+                .findFirst()
+                .orElse(null);
 
-        if (setReaderNames.isEmpty())
-            throw new RuntimeException("no readers available");
+        if (reader == null)
+            throw new IllegalStateException("Card reader is null");
 
-        for (String readerNames : setReaderNames)
-            if (readerNames.matches(matchName))
-                return PLUGIN.getReader(readerNames);
+        PcscReader pcscReader = PLUGIN
+                .getReaderExtension(PcscReader.class, reader.getName())
+                .setContactless(isContactless)
+                .setSharingMode(PcscReader.SharingMode.SHARED);
 
-        throw new RuntimeException(setReaderNames.size() + " card readers found, none matched the pattern");
+        if (isContactless) {
+            pcscReader.setIsoProtocol(PcscReader.IsoProtocol.T1);
+
+            ((ConfigurableCardReader) reader).activateProtocol(
+                    PcscSupportedContactlessProtocol.ISO_14443_4.name(),
+                    "ISO_14443_4_CARD");
+        } else {
+            pcscReader.setIsoProtocol(PcscReader.IsoProtocol.ANY);
+
+            ((ConfigurableCardReader) reader).activateProtocol(
+                    PcscSupportedContactProtocol.ISO_7816_3_T0.name(),
+                    "ISO_7816_3_T0");
+        }
+        return reader;
     }
 
     /**
@@ -105,7 +132,7 @@ public abstract class KeypleUtil {
             String aid) {
 
         CardSelectionManager cardSelectionManager = READER_API_FACTORY.createCardSelectionManager();
-        CalypsoCardSelectionExtension calypsoCardSelection = calypsoCardApiFactory
+        CalypsoCardSelectionExtension calypsoCardSelection = CALYPSO_CARD_API_FACTORY
                 .createCalypsoCardSelectionExtension()
                 .acceptInvalidatedCard();
 
@@ -137,21 +164,17 @@ public abstract class KeypleUtil {
     public static LegacySam selectAndUnlockSam(
             CardReader samReader,
             String lockSecret) {
-        // Get reader api factory
-        ReaderApiFactory readerApiFactory = SmartCardServiceProvider.getService().getReaderApiFactory();
+
+        SMART_CARD_SERVICE.checkCardExtension(CALYPSO_EXTENSION_SERVICE);
 
         // Create a SAM selection manager.
-        CardSelectionManager samSelectionManager = readerApiFactory.createCardSelectionManager();
+        CardSelectionManager samSelectionManager = READER_API_FACTORY.createCardSelectionManager();
 
         // Create a card selector without filter
-        CardSelector<BasicCardSelector> samCardSelector = readerApiFactory.createBasicCardSelector();
-
-        // Get legacy sam api factory
-        LegacySamApiFactory samApiFactory =
-                LegacySamExtensionService.getInstance().getLegacySamApiFactory();
+        CardSelector<BasicCardSelector> samCardSelector = READER_API_FACTORY.createBasicCardSelector();
 
         // Create a SAM selection
-        LegacySamSelectionExtension samSelection = samApiFactory
+        LegacySamSelectionExtension samSelection = LEGACY_SAM_API_FACTORY
                 .createLegacySamSelectionExtension()
                 .prepareReadAllCountersStatus();
 
@@ -189,14 +212,11 @@ public abstract class KeypleUtil {
             CardReader samReader,
             LegacySam sam) {
         SymmetricCryptoCardTransactionManagerFactory symmetricCryptoCardTransactionManagerFactory =
-                LegacySamExtensionService.getInstance().getLegacySamApiFactory()
+                LEGACY_SAM_API_FACTORY
                         .createSymmetricCryptoCardTransactionManagerFactory(
                                 samReader, sam);
 
-        CalypsoCardApiFactory calypsoApiFactory = CalypsoExtensionService.getInstance()
-                .getCalypsoCardApiFactory();
-
-        return calypsoApiFactory
+        return CALYPSO_CARD_API_FACTORY
                 .createSymmetricCryptoSecuritySetting(symmetricCryptoCardTransactionManagerFactory)
                 .enableSvLoadAndDebitLog()
                 .assignDefaultKif(WriteAccessLevel.PERSONALIZATION, (byte) 0x21)
@@ -223,10 +243,10 @@ public abstract class KeypleUtil {
             int record) {
         try {
             ctm
-                    .prepareOpenSecureSession(writeAccessLevel)
+//                    .prepareOpenSecureSession(writeAccessLevel)
                     .prepareReadRecord(fileId, record)
                     .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                    .prepareCloseSecureSession()
+//                    .prepareCloseSecureSession()
                     .processCommands(ChannelControl.KEEP_OPEN);
         } catch (Exception e) {
             throw new CardException(e.getMessage());
@@ -247,7 +267,7 @@ public abstract class KeypleUtil {
             Map<Byte, Integer> fileAndRecord,
             ChannelControl channelControl) {
         Map<Byte, byte[]> filesData = new HashMap<>();
-        ctm.prepareOpenSecureSession(writeAccessLevel);
+//        ctm.prepareOpenSecureSession(writeAccessLevel);
 
         for (Map.Entry<Byte, Integer> entry : fileAndRecord.entrySet()) {
             ctm.prepareReadRecord(entry.getKey(), entry.getValue());
@@ -255,7 +275,7 @@ public abstract class KeypleUtil {
 
         ctm
                 .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                .prepareCloseSecureSession()
+//                .prepareCloseSecureSession()
                 .processCommands(channelControl);
 
         for (Map.Entry<Byte, Integer> entry : fileAndRecord.entrySet()) {
@@ -292,7 +312,7 @@ public abstract class KeypleUtil {
             int bytesToRead) {
         try {
             ctm
-                    .prepareOpenSecureSession(writeAccessLevel)
+//                    .prepareOpenSecureSession(writeAccessLevel)
                     .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
                     .prepareReadRecordsPartially(
                             fileId,
@@ -300,7 +320,7 @@ public abstract class KeypleUtil {
                             toRecord,
                             offset,
                             bytesToRead)
-                    .prepareCloseSecureSession()
+//                    .prepareCloseSecureSession()
                     .processCommands(ChannelControl.KEEP_OPEN);
         } catch (Exception e) {
             throw new CardException(e.getMessage());
@@ -329,11 +349,11 @@ public abstract class KeypleUtil {
             ChannelControl channelControl) {
         try {
             ctm
-                    .prepareOpenSecureSession(writeAccessLevel)
+//                    .prepareOpenSecureSession(writeAccessLevel)
                     .prepareAppendRecord(
                             fileId,
                             fileData)
-                    .prepareCloseSecureSession()
+//                    .prepareCloseSecureSession()
                     .processCommands(channelControl);
         } catch (Exception e) {
             throw new CardException(e.getMessage());
@@ -377,9 +397,9 @@ public abstract class KeypleUtil {
             ChannelControl channelControl) {
         try {
             ctm
-                    .prepareOpenSecureSession(writeAccessLevel)
+//                    .prepareOpenSecureSession(writeAccessLevel)
                     .prepareUpdateRecord(fileId, record, data)
-                    .prepareCloseSecureSession()
+//                    .prepareCloseSecureSession()
                     .processCommands(channelControl);
         } catch (Exception e) {
             throw new CardException("Error updating file card: ", e.getMessage());
@@ -436,7 +456,12 @@ public abstract class KeypleUtil {
         Logs logs = readCardLogs(ctm, calypsoCard);
 
         if (transactionType.isWritten())
-            appendEditCardFile(ctm, WriteAccessLevel.DEBIT, Calypso.EVENT_FILE, event.unparse(), channelControl);
+            try {
+                appendEditCardFile(ctm, WriteAccessLevel.DEBIT, Calypso.EVENT_FILE, event.unparse(), channelControl);
+            } catch (Exception e) {
+                log.warn("Error saving event: {}", e.getMessage());
+                throw new RuntimeException(e);
+            }
 
         return TransactionDataEvent
                 .builder()
@@ -602,11 +627,11 @@ public abstract class KeypleUtil {
     public static Logs readCardLogs(
             SecureRegularModeTransactionManager ctm,
             CalypsoCard calypsoCard) {
-        ctm
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-                .prepareCloseSecureSession()
-                .processCommands(ChannelControl.KEEP_OPEN);
+//        ctm
+//                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+//                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+//                .prepareCloseSecureSession()
+//                .processCommands(ChannelControl.KEEP_OPEN);
 
         Logs logs = new Logs();
         logs.setDebitLog(new DebitLog().parse(calypsoCard.getSvDebitLogLastRecord()));
@@ -627,13 +652,13 @@ public abstract class KeypleUtil {
             int amount,
             ChannelControl channelControl) {
         ctm
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+//                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                 .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
                 .prepareSvDebit(
                         amount,
                         CompactDate.now().toBytes(),
                         CompactTime.now().toBytes())
-                .prepareCloseSecureSession()
+//                .prepareCloseSecureSession()
                 .processCommands(channelControl);
     }
 
@@ -657,9 +682,9 @@ public abstract class KeypleUtil {
     public static void rehabilitateCard(
             SecureRegularModeTransactionManager ctm) {
         ctm
-                .prepareOpenSecureSession(WriteAccessLevel.PERSONALIZATION)
+//                .prepareOpenSecureSession(WriteAccessLevel.PERSONALIZATION)
                 .prepareRehabilitate()
-                .prepareCloseSecureSession()
+//                .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);
     }
 
@@ -676,9 +701,9 @@ public abstract class KeypleUtil {
     public static void invalidateCard(
             SecureRegularModeTransactionManager ctm, ChannelControl channelControl) {
         ctm
-                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+//                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
                 .prepareInvalidate()
-                .prepareCloseSecureSession()
+//                .prepareCloseSecureSession()
                 .processCommands(channelControl);
     }
 
@@ -692,14 +717,14 @@ public abstract class KeypleUtil {
             SecureRegularModeTransactionManager ctm,
             int amount) {
         ctm
-                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
+//                .prepareOpenSecureSession(WriteAccessLevel.LOAD)
                 .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
                 .prepareSvReload(
                         amount,
                         CompactDate.now().toBytes(),
                         CompactTime.now().toBytes(),
                         ByteUtils.extractBytes(0, 2))
-                .prepareCloseSecureSession()
+//                .prepareCloseSecureSession()
                 .processCommands(ChannelControl.KEEP_OPEN);
     }
 
@@ -713,8 +738,7 @@ public abstract class KeypleUtil {
     public static TraceableSignatureComputationData buildSignatureComputationData(
             byte[] fullSerial,
             Contract contract) {
-        return LegacySamExtensionService.getInstance()
-                .getLegacySamApiFactory()
+        return LEGACY_SAM_API_FACTORY
                 .createTraceableSignatureComputationData()
                 .withSamTraceabilityMode(
                         0xD0,
@@ -820,8 +844,7 @@ public abstract class KeypleUtil {
             CardReader cardReader,
             CalypsoCard calypsoCard,
             SymmetricCryptoSecuritySetting symmetricCryptoSecuritySetting) {
-        return CalypsoExtensionService.getInstance()
-                .getCalypsoCardApiFactory()
+        return CALYPSO_CARD_API_FACTORY
                 .createSecureRegularModeTransactionManager(
                         cardReader,
                         calypsoCard,
@@ -842,12 +865,9 @@ public abstract class KeypleUtil {
                         .filterByPowerOnData(
                                 LegacySamUtil.buildPowerOnDataFilter(productType, null));
 
-        LegacySamApiFactory legacySamApiFactory =
-                LegacySamExtensionService.getInstance().getLegacySamApiFactory();
-
         // Create a SAM selection using the Calypso card extension.
         samSelectionManager.prepareSelection(
-                cardSelector, legacySamApiFactory.createLegacySamSelectionExtension());
+                cardSelector, LEGACY_SAM_API_FACTORY.createLegacySamSelectionExtension());
 
         // SAM communication: run the selection scenario.
         CardSelectionResult samSelectionResult =
@@ -868,7 +888,7 @@ public abstract class KeypleUtil {
             CalypsoCard calypsoCard,
             LocalDate startDate,
             LocalDate endDate) {
-        FreeTransactionManager freeTransactionManager = CalypsoExtensionService.getInstance().getCalypsoCardApiFactory()
+        FreeTransactionManager freeTransactionManager = CALYPSO_CARD_API_FACTORY
                 .createFreeTransactionManager(cardReader, calypsoCard);
         try {
             freeTransactionManager
@@ -880,7 +900,7 @@ public abstract class KeypleUtil {
         }
 
         LegacyCardCertificateComputationData cardCertificateComputationData =
-                KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+                LEGACY_SAM_API_FACTORY
                         .createLegacyCardCertificateComputationData()
                         .setCardAid(calypsoCard.getDfName())
                         .setCardSerialNumber(calypsoCard.getApplicationSerialNumber())
@@ -889,7 +909,7 @@ public abstract class KeypleUtil {
                         .setCardStartupInfo(calypsoCard.getStartupInfoRawData());
 
         try {
-            KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+            LEGACY_SAM_API_FACTORY
                     .createFreeTransactionManager(samReader, legacySam)
                     .prepareGetData(GetDataTag.CA_CERTIFICATE)
                     .prepareComputeCardCertificate(cardCertificateComputationData)
@@ -899,7 +919,7 @@ public abstract class KeypleUtil {
         }
 
         try {
-            CalypsoExtensionService.getInstance().getCalypsoCardApiFactory()
+            CALYPSO_CARD_API_FACTORY
                     .createFreeTransactionManager(cardReader, calypsoCard)
                     .preparePutData(PutDataTag.CA_CERTIFICATE, legacySam.getCaCertificate())
                     .preparePutData(PutDataTag.CARD_CERTIFICATE, cardCertificateComputationData.getCertificate())
@@ -918,7 +938,7 @@ public abstract class KeypleUtil {
             LocalDate endDate) {
         KeyPairContainer keyPairContainer = KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory().createKeyPairContainer();
         LegacyCardCertificateComputationData cardCertificateComputationData =
-                KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+                LEGACY_SAM_API_FACTORY
                         .createLegacyCardCertificateComputationData()
                         .setCardAid(calypsoCard.getDfName())
                         .setCardSerialNumber(calypsoCard.getApplicationSerialNumber())
@@ -927,7 +947,7 @@ public abstract class KeypleUtil {
                         .setCardStartupInfo(calypsoCard.getStartupInfoRawData());
 
         try {
-            KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory()
+            LEGACY_SAM_API_FACTORY
                     .createFreeTransactionManager(samReader, legacySam)
                     .prepareGetData(GetDataTag.CA_CERTIFICATE)
                     .prepareGenerateCardAsymmetricKeyPair(keyPairContainer)
@@ -938,7 +958,7 @@ public abstract class KeypleUtil {
         }
 
         try {
-            CalypsoExtensionService.getInstance().getCalypsoCardApiFactory()
+            CALYPSO_CARD_API_FACTORY
                     .createFreeTransactionManager(cardReader, calypsoCard)
                     .preparePutData(PutDataTag.CA_CERTIFICATE, legacySam.getCaCertificate())
                     .preparePutData(PutDataTag.CARD_KEY_PAIR, keyPairContainer.getKeyPair())
