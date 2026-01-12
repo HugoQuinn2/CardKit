@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Equipment;
 import com.idear.devices.card.cardkit.core.io.Item;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.eclipse.keyple.core.util.HexUtil;
 
 /**
  * Represents the Location Code (24-bit field) for Calypso Prime cards
@@ -50,7 +50,7 @@ public class LocationCode extends Item implements IDataModel {
      */
     @JsonValue
     public String toJsonValue() {
-        return HexUtil.toHex(value);
+        return String.format("%02X", value).toUpperCase();
     }
 
     /**

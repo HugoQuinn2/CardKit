@@ -2,11 +2,11 @@ package com.idear.devices.card.cardkit.core.io.card.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.idear.devices.card.cardkit.core.io.Item;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.eclipse.keyple.core.util.HexUtil;
 
 /**
  * Represents a generic file stored on a card.
@@ -44,7 +44,7 @@ public abstract class File<T extends File<T>> extends Item {
      * Update the {@link File#content} unparsing the file
      */
     public void update() {
-        this.content = HexUtil.toHex(unparse());
+        this.content = Strings.bytesToHex(unparse());
     }
 
 }

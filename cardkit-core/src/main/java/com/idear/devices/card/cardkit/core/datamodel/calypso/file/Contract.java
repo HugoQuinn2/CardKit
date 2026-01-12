@@ -9,8 +9,8 @@ import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.*;
-import org.eclipse.keyple.core.util.HexUtil;
 
 import java.time.LocalDate;
 
@@ -113,7 +113,7 @@ public class Contract extends File<Contract> {
         bit.setNextInteger(authKvc, 8);
         bit.setNextInteger(authenticator, 24);
 
-        setContent(HexUtil.toHex(bit.getData()));
+        setContent(Strings.bytesToHex(bit.getData()));
         return bit.getData();
     }
 
@@ -131,7 +131,7 @@ public class Contract extends File<Contract> {
             data = tmp;
         }
 
-        setContent(HexUtil.toHex(data));
+        setContent(Strings.bytesToHex(data));
 
         this.version.setValue(data[0] & 0xff);
         this.status.setValue(data[1] & 0xff);

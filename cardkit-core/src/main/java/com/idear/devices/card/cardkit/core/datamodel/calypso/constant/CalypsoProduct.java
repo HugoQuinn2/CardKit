@@ -16,25 +16,6 @@ public enum CalypsoProduct implements IDataModel {
 
     private final int value;
 
-    public static CalypsoProduct parseByCalypsoCard(CalypsoCard calypsoCard) {
-        if (calypsoCard.isHce())
-            return CalypsoProduct.CALYPSO_HCE;
-
-        switch (calypsoCard.getProductType()) {
-            case PRIME_REVISION_1:
-            case PRIME_REVISION_2:
-            case PRIME_REVISION_3:
-                return CalypsoProduct.CALYPSO_PRIME;
-            case LIGHT:
-                return CalypsoProduct.CALYPSO_LIGHT;
-            case BASIC:
-                return CalypsoProduct.CALYPSO_BASIC;
-            case UNKNOWN:
-            default:
-                return CalypsoProduct.RFU;
-        }
-    }
-
     public static CalypsoProduct decode(int value) {
         for (CalypsoProduct v : values()) {
             if (v.value ==  value)

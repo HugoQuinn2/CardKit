@@ -87,11 +87,11 @@ public class RenewedCard extends AbstractTransaction<TransactionDataEvent, Keypl
 
         KeypleUtil.editCardFile(
                 context.getCardTransactionManager(),
-                WriteAccessLevel.DEBIT,
                 _contract.getFileId(),
                 _contract.getId(),
                 _contract.unparse(),
-                ChannelControl.KEEP_OPEN
+                ChannelControl.KEEP_OPEN,
+                false
         );
 
         Event event = Event.builEvent(

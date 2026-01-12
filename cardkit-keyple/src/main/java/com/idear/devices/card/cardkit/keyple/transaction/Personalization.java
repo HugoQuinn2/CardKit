@@ -24,11 +24,11 @@ public class Personalization extends AbstractTransaction<Boolean, KeypleTransact
 
         KeypleUtil.editCardFile(
                 context.getCardTransactionManager(),
-                WriteAccessLevel.PERSONALIZATION,
                 fileId,
                 recordNumber,
                 data,
-                ChannelControl.KEEP_OPEN
+                ChannelControl.KEEP_OPEN,
+                true
         );
 
         return TransactionResult

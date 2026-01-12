@@ -11,9 +11,9 @@ import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.eclipse.keyple.core.util.HexUtil;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -60,7 +60,7 @@ public class Event extends File<Event> {
         bit.setNextInteger(firstContractsUsed, 8);
         bit.setNextInteger(data, 16);
 
-        setContent(HexUtil.toHex(bit.getData()));
+        setContent(Strings.bytesToHex(bit.getData()));
         return bit.getData();
     }
 
@@ -81,7 +81,7 @@ public class Event extends File<Event> {
         this.firstContractsUsed   = data[26] & 0xff;
         this.data                 = ByteUtils.extractInt(data, 27, 2, false);
 
-        setContent(HexUtil.toHex(data));
+        setContent(Strings.bytesToHex(data));
         return this;
     }
 

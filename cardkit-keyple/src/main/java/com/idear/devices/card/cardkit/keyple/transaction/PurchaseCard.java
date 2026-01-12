@@ -60,11 +60,11 @@ public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, Keyp
 
         KeypleUtil.editCardFile(
                 context.getCardTransactionManager(),
-                WriteAccessLevel.LOAD,
                 Calypso.CONTRACT_FILE,
                 _contract.getId(),
                 _contract.unparse(),
-                ChannelControl.KEEP_OPEN
+                ChannelControl.KEEP_OPEN,
+                false
         );
 
         Event event = Event.builEvent(

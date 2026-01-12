@@ -12,9 +12,9 @@ import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.eclipse.keyple.core.util.HexUtil;
 
 import java.time.LocalDate;
 
@@ -170,7 +170,7 @@ public class Environment extends File<Environment> {
 
         this.holderPadding = ByteUtils.leastSignificantNibble(data[28]);
 
-        setContent(HexUtil.toHex(data));
+        setContent(Strings.bytesToHex(data));
         return this;
     }
 

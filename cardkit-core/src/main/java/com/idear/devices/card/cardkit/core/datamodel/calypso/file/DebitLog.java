@@ -7,9 +7,9 @@ import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.card.SvDebitLogRecord;
 
 import java.time.LocalDateTime;
@@ -40,7 +40,7 @@ public class DebitLog extends File<DebitLog> {
         bit.setNextInteger(date.getValue(), 16);
         bit.setNextInteger(time.getValue(), 16);
         bit.setNextInteger(kvc, 8);
-        bit.setNextInteger(HexUtil.toInt(samId), 32);
+        bit.setNextInteger((int) Long.parseLong(samId, 16), 32);
         bit.setNextInteger(samNum, 24);
         bit.setNextInteger(balance, 24);
         bit.setNextInteger(svtNum, 16);
@@ -55,11 +55,11 @@ public class DebitLog extends File<DebitLog> {
         this.date = CompactDate.fromDays(ByteUtils.extractInt(data, 4, 2, false));
         this.time = CompactTime.fromMinutes(ByteUtils.extractInt(data, 6, 2, false));
         this.kvc = data[8] & 0xff;
-        this.samId = HexUtil.toHex(ByteUtils.extractInt(data, 9, 4, false));
+        this.samId = String.format("%08X", ByteUtils.extractInt(data, 9, 4, false));
         this.balance = ByteUtils.extractInt(data, 13, 4, false);
         this.samNum = data[17] & 0xff;
 
-        setContent(HexUtil.toHex(data));
+        setContent(Strings.bytesToHex(data));
         return this;
     }
 
@@ -68,12 +68,12 @@ public class DebitLog extends File<DebitLog> {
         date = CompactDate.fromDays(ByteUtils.extractInt(data.getDebitDate(), 0, 2, false));
         time = CompactTime.fromMinutes(ByteUtils.extractInt(data.getDebitTime(), 0, 2, false));
         kvc = data.getKvc() & 0xff;
-        samId = HexUtil.toHex(ByteUtils.extractInt(data.getSamId(), 0, 4, false));
+        samId =  String.format("%08X", ByteUtils.extractInt(data.getSamId(), 0, 4, false));
         samNum = data.getSamTNum();
         balance = data.getBalance();
         svtNum = data.getSamTNum();
 
-        setContent(HexUtil.toHex(data.getRawData()));
+        setContent(Strings.bytesToHex(data.getRawData()));
         return this;
     }
 

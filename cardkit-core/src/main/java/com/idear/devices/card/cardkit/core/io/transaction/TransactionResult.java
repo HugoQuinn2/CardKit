@@ -186,4 +186,11 @@ public class TransactionResult<T> extends Item {
         return this;
     }
 
+    public TransactionResult<T> throwException() throws Throwable {
+        if (exception != null)
+            throw exception;
+
+        return this;
+    }
+
 }

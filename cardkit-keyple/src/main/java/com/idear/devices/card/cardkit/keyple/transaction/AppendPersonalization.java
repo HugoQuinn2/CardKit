@@ -21,10 +21,10 @@ public class AppendPersonalization extends AbstractTransaction<Boolean, KeypleTr
 
         KeypleUtil.appendEditCardFile(
                 context.getCardTransactionManager(),
-                WriteAccessLevel.PERSONALIZATION,
                 fileId,
                 data,
-                ChannelControl.KEEP_OPEN
+                ChannelControl.KEEP_OPEN,
+                true
         );
 
         return TransactionResult

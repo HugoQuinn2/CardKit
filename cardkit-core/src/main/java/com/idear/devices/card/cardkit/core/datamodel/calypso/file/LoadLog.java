@@ -5,9 +5,9 @@ import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.eclipse.keyple.core.util.HexUtil;
 import org.eclipse.keypop.calypso.card.card.SvLoadLogRecord;
 
 @EqualsAndHashCode(callSuper = true)
@@ -56,11 +56,11 @@ public class LoadLog extends File<LoadLog> {
         balance = ByteUtils.extractInt(data, 64, 3, true);
         amount = ByteUtils.extractInt(data, 88, 3, true);
         time = CompactTime.fromMinutes(ByteUtils.extractInt(data, 104, 2, false));
-        samId =  HexUtil.toHex(ByteUtils.extractInt(data, 136, 4, false));
+        samId = String.format("%08X", ByteUtils.extractInt(data, 136, 4, false));
         samTNum = ByteUtils.extractInt(data, 160, 3, false);
         svNum = ByteUtils.extractInt(data, 176, 2, false);
 
-        setContent(HexUtil.toHex(data));
+        setContent(Strings.bytesToHex(data));
         return this;
     }
 
@@ -75,11 +75,11 @@ public class LoadLog extends File<LoadLog> {
         balance = data.getBalance();
         amount = data.getAmount();
         time = CompactTime.fromMinutes(ByteUtils.extractInt(data.getLoadTime(), 0, 2, false));
-        samId = HexUtil.toHex(ByteUtils.extractInt(data.getSamId(), 0, 4, false));
+        samId = String.format("%08X", ByteUtils.extractInt(data.getSamId(), 0, 4, false));
         samTNum = data.getSamTNum();
         svNum = data.getSvTNum();
 
-        setContent(HexUtil.toHex(data.getRawData()));
+        setContent(Strings.bytesToHex(data.getRawData()));
         return this;
     }
 

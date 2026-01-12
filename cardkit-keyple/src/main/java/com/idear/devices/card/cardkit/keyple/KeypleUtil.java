@@ -335,7 +335,6 @@ public abstract class KeypleUtil {
      * Appends a new record to a card file.
      *
      * @param ctm the transaction manager
-     * @param writeAccessLevel the access level to use
      * @param fileId the file identifier
      * @param fileData the data to append
      * @param channelControl the channel control behavior
@@ -343,18 +342,19 @@ public abstract class KeypleUtil {
      */
     public static void appendEditCardFile(
             SecureRegularModeTransactionManager ctm,
-            WriteAccessLevel writeAccessLevel,
             byte fileId,
             byte[] fileData,
-            ChannelControl channelControl) {
+            ChannelControl channelControl,
+            boolean isCloseSession) {
         try {
-            ctm
-//                    .prepareOpenSecureSession(writeAccessLevel)
-                    .prepareAppendRecord(
-                            fileId,
-                            fileData)
-//                    .prepareCloseSecureSession()
-                    .processCommands(channelControl);
+            if (isCloseSession)
+                ctm.prepareAppendRecord(fileId, fileData)
+                        .prepareCloseSecureSession()
+                        .processCommands(channelControl);
+            else
+                ctm.prepareAppendRecord(fileId, fileData)
+                        .processCommands(channelControl);
+
         } catch (Exception e) {
             throw new CardException(e.getMessage());
         }
@@ -364,24 +364,22 @@ public abstract class KeypleUtil {
      * Appends a new record to a card file, with default channel control {@link ChannelControl#KEEP_OPEN}
      *
      * @param ctm the transaction manager
-     * @param writeAccessLevel the access level to use
      * @param fileId the file identifier
      * @param fileData the data to append
      * @throws CardException if the append operation fails
      */
     public static void appendEditCardFile(
             SecureRegularModeTransactionManager ctm,
-            WriteAccessLevel writeAccessLevel,
             byte fileId,
-            byte[] fileData) {
-        appendEditCardFile(ctm, writeAccessLevel, fileId, fileData, ChannelControl.KEEP_OPEN);
+            byte[] fileData,
+            boolean isCloseSession) {
+        appendEditCardFile(ctm, fileId, fileData, ChannelControl.KEEP_OPEN, isCloseSession);
     }
 
     /**
      * Updates an existing record in a card file.
      *
      * @param ctm the transaction manager
-     * @param writeAccessLevel the access level to use
      * @param fileId the file identifier
      * @param record the record number
      * @param data the new record data
@@ -390,39 +388,19 @@ public abstract class KeypleUtil {
      */
     public static void editCardFile(
             SecureRegularModeTransactionManager ctm,
-            WriteAccessLevel writeAccessLevel,
             byte fileId,
             int record,
             byte[] data,
-            ChannelControl channelControl) {
+            ChannelControl channelControl,
+            boolean isCloseSession) {
         try {
-            ctm
-//                    .prepareOpenSecureSession(writeAccessLevel)
-                    .prepareUpdateRecord(fileId, record, data)
-//                    .prepareCloseSecureSession()
-                    .processCommands(channelControl);
+            ctm.prepareUpdateRecord(fileId, record, data);
+            if (isCloseSession)
+                ctm.prepareCloseSecureSession();
+            ctm.processCommands(channelControl);
         } catch (Exception e) {
             throw new CardException("Error updating file card: ", e.getMessage());
         }
-    }
-
-    /**
-     * Updates an existing record in a card file, with default channel control {@link ChannelControl#KEEP_OPEN}
-     *
-     * @param ctm the transaction manager
-     * @param writeAccessLevel the access level to use
-     * @param fileId the file identifier
-     * @param record the record number
-     * @param data the new record data
-     * @throws CardException if the update fails
-     */
-    public static void editCardFile(
-            SecureRegularModeTransactionManager ctm,
-            WriteAccessLevel writeAccessLevel,
-            byte fileId,
-            int record,
-            byte[] data) {
-        editCardFile(ctm, writeAccessLevel, fileId, record, data, ChannelControl.KEEP_OPEN);
     }
 
     /**
@@ -457,10 +435,9 @@ public abstract class KeypleUtil {
 
         if (transactionType.isWritten())
             try {
-                appendEditCardFile(ctm, WriteAccessLevel.DEBIT, Calypso.EVENT_FILE, event.unparse(), channelControl);
-            } catch (Exception e) {
-                log.warn("Error saving event: {}", e.getMessage());
-                throw new RuntimeException(e);
+                appendEditCardFile(ctm, Calypso.EVENT_FILE, event.unparse(), channelControl, true);
+            } catch (Exception ignored) {
+                System.out.println(ignored);
             }
 
         return TransactionDataEvent

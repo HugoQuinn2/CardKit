@@ -3,7 +3,6 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.file.DebitLog;
-import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.CardKitException;
@@ -12,8 +11,10 @@ import com.idear.devices.card.cardkit.keyple.KeypleCalypsoSamReader;
 import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionManager;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
-import org.junit.jupiter.api.BeforeAll;
+import com.idear.devices.card.cardkit.keyple.event.CardStatus;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
@@ -39,11 +40,8 @@ public class KeypleTransactionManagerTest {
 
     @Test
     public void simpleReadCardData() throws Exception {
-        while (true) {
-            kcr.waitForCardPresent(0);
-            CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().print().getData();
-            kcr.waitForCarAbsent(0);
-        }
+        System.out.println(ktm.getSamReader().getSamReader().isContactless());
+        ktm.readCardData().print();
     }
 
     @Test
@@ -53,18 +51,49 @@ public class KeypleTransactionManagerTest {
         TransactionType transactionType = TransactionType.GENERAL_DEBIT;
         int amount = 10_00;
 
+        // Executor used to persist or process transaction results asynchronously
+        ExecutorService executorTransactionResult = Executors.newSingleThreadExecutor();
+
+        ktm.getCardEventList().add(e -> {
+            if (!e.getCardStatus().equals(CardStatus.CARD_PRESENT))
+                return;
+
+            try {
+                ktm.openSession(WriteAccessLevel.DEBIT);
+
+                // Read all card data and validate the operation result
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                        .throwException() // throw the exception transaction result and abort all process
+                        .getData();
+
+                TransactionResult<TransactionDataEvent> transactionResult = ktm.debitCard(
+                        calypsoCardCDMX,
+                        transactionType.getValue(),
+                        locationCode.getValue(),
+                        provider.getValue(),
+                        0,
+                        amount
+                ).throwException();
+
+                // Persist or publish the transaction result asynchronously
+//                executorTransactionResult.submit(() -> System.out.println(transactionResult));
+
+//                ktm.closeSession();
+                System.out.println("Debit success!!");
+            } catch (CardKitException cardKitException) {
+                System.out.println("Debit aborted: " + cardKitException.getMessage());
+            } catch (Throwable throwable) {
+                System.out.println("Fatal error: " + throwable.getMessage());
+            }
+        });
+        ktm.startCardMonitor();
+
         while (true) {
-            kcr.waitForCardPresent(0);
-            CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().getData();
-            ktm.debitCard(
-                    calypsoCardCDMX,
-                    transactionType.getValue(),
-                    locationCode.getValue(),
-                    provider.getValue(),
-                    0,
-                    amount
-            ).print();
-            kcr.waitForCarAbsent(0);
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -92,8 +121,7 @@ public class KeypleTransactionManagerTest {
             try {
                 // Read all card data and validate the operation result
                 CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
-                        .throwMessageOnError(CardException.class)
-                        .throwMessageOnAborted(CardException.class)
+                        .throwException()
                         .getData();
 
                 // Verify that the card is enabled
@@ -221,8 +249,7 @@ public class KeypleTransactionManagerTest {
                                         0,
                                         amount
                                 )
-                                .throwMessageOnAborted(CardException.class)
-                                .throwMessageOnAborted(CardException.class);
+                                .throwException();
 
                 // Persist or publish the transaction result asynchronously
                 executorTransactionResult.submit(() -> System.out.println(transactionResult));
@@ -234,7 +261,7 @@ public class KeypleTransactionManagerTest {
                 // Controlled business error (validation, rules, card state)
                 System.out.println("Debit aborted: " + cardKitException.getMessage());
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 // Unexpected fatal error
                 System.out.println("Fatal error: " + e.getMessage());
@@ -249,7 +276,7 @@ public class KeypleTransactionManagerTest {
     public void basicReloadCard() {
         LocationCode locationCode = new LocationCode(0xAAAAAA);
         Provider provider = Provider.CABLEBUS;
-        int amount = 10_00;
+        int amount = 100_00;
 
         while (true) {
             kcr.waitForCardPresent(0);
@@ -272,26 +299,128 @@ public class KeypleTransactionManagerTest {
         int amount = 10_00;
 
         // Required data for a purchase
-        Modality modality = Modality.MULTIMODAL;
+        Modality modality = Modality.MONOMODAL;
         Tariff tariff = Tariff.STORED_VALUE;
         RestrictTime restrictTime = RestrictTime.WITHOUT_RESTRICTION;
         int duration = PeriodType.encode(PeriodType.MONTH, 60);
 
+        // Continuous loop simulating a real reader environment
         while (true) {
             kcr.waitForCardPresent(0);
-            CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().print().getData();
-            ktm.purchaseCard(
-                    calypsoCardCDMX,
-                    locationCode.getValue(),
-                    1,
-                    modality.getValue(),
-                    tariff.getValue(),
-                    restrictTime.getValue(),
-                    duration,
-                    provider.getValue(),
-                    0,
-                    amount
-            ).print();
+            try {
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                        .throwException()
+                        .getData();
+
+                ktm.purchaseCard(
+                        calypsoCardCDMX,
+                        locationCode.getValue(),
+                        1,
+                        modality.getValue(),
+                        tariff.getValue(),
+                        restrictTime.getValue(),
+                        duration,
+                        provider.getValue(),
+                        0,
+                        amount
+                ).throwException();
+
+                System.out.println("Purchase success!!");
+            } catch (CardKitException cardKitException) {
+                System.out.println("Purchase aborted: " + cardKitException.getMessage());
+            } catch (Throwable e) {
+                System.out.println("Fatal error: " + e.getMessage());
+            }
+
+            kcr.waitForCarAbsent(0);
+        }
+    }
+
+    @Test
+    public void invalidateCard() {
+        LocationCode locationCode = new LocationCode(0xAAAAAA);
+        Provider provider = Provider.CABLEBUS;
+
+        // Continuous loop simulating a real reader environment
+        while (true) {
+            kcr.waitForCardPresent(0);
+            try {
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().throwException().getData();
+                ktm.invalidateCard(
+                        calypsoCardCDMX,
+                        TransactionType.BLACKLISTED_CARD.getValue(),
+                        locationCode.getValue(),
+                        provider.getValue(),
+                        0
+                ).throwException();
+                System.out.println("Invalidate success!!");
+            } catch (CardKitException cardKitException) {
+                System.out.println("Invalidate aborted: " + cardKitException.getMessage());
+            } catch (Throwable throwable) {
+                System.out.println("Fatal error: " + throwable.getMessage());
+            }
+            kcr.waitForCarAbsent(0);
+        }
+    }
+
+    @Test
+    public void rehabilitateCard() {
+        // Continuous loop simulating a real reader environment
+        while (true) {
+            kcr.waitForCardPresent(0);
+            try {
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().throwException().getData();
+                ktm.rehabilitateCard(calypsoCardCDMX).throwException();
+                System.out.println("Rehabilitate success!!");
+            } catch (CardKitException cardKitException) {
+                System.out.println("Rehabilitate aborted: " + cardKitException.getMessage());
+            } catch (Throwable e) {
+                System.out.println("Fatal error: " + e.getMessage());
+            }
+            kcr.waitForCarAbsent(0);
+        }
+    }
+
+    @Test
+    public void balanceCancellation() {
+        LocationCode locationCode = new LocationCode(0xAAAAAA);
+        Provider provider = Provider.CABLEBUS;
+        TransactionType transactionType = TransactionType.BALANCE_CANCELLATION_DEBIT_SAM_NOT_WHITELISTED;
+
+        // Executor used to persist or process transaction results asynchronously
+        ExecutorService executorTransactionResult = Executors.newSingleThreadExecutor();
+
+        // Continuous loop simulating a real reader environment
+        while (true) {
+
+            // Block execution until a card is detected on the reader
+            kcr.waitForCardPresent(0);
+
+            try {
+
+                // Read all card data and validate the operation result
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                        .throwException() // throw the exception transaction result and abort all process
+                        .getData();
+
+                TransactionResult<TransactionDataEvent> transactionResult = ktm.balanceCancellation(
+                        calypsoCardCDMX,
+                        transactionType.getValue(),
+                        locationCode.getValue(),
+                        provider.getValue(),
+                        0
+                ).throwException();
+
+                // Persist or publish the transaction result asynchronously
+                executorTransactionResult.submit(() -> System.out.println(transactionResult));
+
+                System.out.println("Balance cancellation success!!");
+            } catch (CardKitException cardKitException) {
+                System.out.println("Balance cancellation aborted: " + cardKitException.getMessage());
+            } catch (Throwable throwable) {
+                System.out.println("Fatal error: " + throwable.getMessage());
+            }
+
             kcr.waitForCarAbsent(0);
         }
     }

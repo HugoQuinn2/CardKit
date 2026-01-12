@@ -31,4 +31,18 @@ public class Strings {
         return result.toUpperCase();
     }
 
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
+    public static String intToHexByte(int value) {
+        if (value < 0 || value > 0xFF) {
+            throw new IllegalArgumentException("Value out of byte range");
+        }
+        return String.format("%02X", value);
+    }
 }

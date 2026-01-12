@@ -17,6 +17,7 @@
         <option value="$PROJECT_DIR$/cardkit-card-calypso-cdmx/pom.xml" />
         <option value="$PROJECT_DIR$/cardkit-example/pom.xml" />
         <option value="$PROJECT_DIR$/cardkit-factory/pom.xml" />
+        <option value="$PROJECT_DIR$/cardkit-test/pom.xml" />
       </set>
     </option>
   </component>

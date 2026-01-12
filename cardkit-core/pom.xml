@@ -1,25 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>com.idear.devices.card.cardkit</groupId>
-        <artifactId>cardkit</artifactId>
-        <version>1.0.0</version>
-    </parent>
-
+    <groupId>com.idear.devices.card.cardkit</groupId>
     <artifactId>cardkit-core</artifactId>
+    <version>0.1.0</version>
     <packaging>jar</packaging>
 
-    <developers>
-        <developer>
-            <name>Victor Hugo Gaspar Quinn</name>
-            <email>hugoquinn.profesional@gmail.com</email>
-        </developer>
-    </developers>
+    <name>CardKit Core</name>
+    <description>Core abstractions and shared models for CardKit</description>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -28,7 +21,35 @@
     </properties>
 
     <dependencies>
-        <!-- Dependencies -->
+
+        <!-- JSerialComm -->
+        <dependency>
+            <groupId>com.fazecast</groupId>
+            <artifactId>jSerialComm</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+
+        <!-- Json -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.16.0</version>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
+            <scope>compileOnly</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+
     </dependencies>
 
 </project>
