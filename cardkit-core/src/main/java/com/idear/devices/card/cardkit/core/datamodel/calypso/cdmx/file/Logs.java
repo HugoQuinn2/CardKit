@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file;
 
 import lombok.Data;
 

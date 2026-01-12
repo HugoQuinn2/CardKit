@@ -1,10 +1,10 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
@@ -15,7 +15,6 @@ import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.core.util.HexUtil;
-import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 
 import java.time.LocalDate;

@@ -1,25 +1,21 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
-import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Provider;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.TransactionType;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Logs;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
-import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
-import com.idear.devices.card.cardkit.core.exception.CardException;
+import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.TransactionType;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
-import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
 import org.eclipse.keypop.calypso.card.transaction.SvOperation;
@@ -50,34 +46,58 @@ public class ReloadCard extends AbstractTransaction<TransactionDataEvent, Keyple
     @Override
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
 
-        KeypleUtil.reloadCard(context.getCardTransactionManager(), amount);
-
         Event event = Event.builEvent(
                 TransactionType.RELOAD.getValue(),
                 calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
                 provider,
                 contract.getId(),
                 passenger,
-                calypsoCardCDMX.getEvents().getNextTransactionNumber(),
+                getCalypsoCardCDMX().getEvents().getNextTransactionNumber(),
                 locationId,
                 amount
         );
 
-        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+        context.getCardTransactionManager()
+                .prepareSvGet(SvOperation.RELOAD, SvAction.DO)
+                .prepareSvReload(
+                        amount,
+                        CompactDate.now().toBytes(),
+                        CompactTime.now().toBytes(),
+                        ByteUtils.extractBytes(0, 2)
+                ).prepareAppendRecord(
+                        event.getFileId(),
+                        event.unparse()
+                ).prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
+
+        Logs logs = KeypleUtil.readCardLogs(
                 context.getCardTransactionManager(),
-                calypsoCardCDMX,
-                context.getKeypleCardReader().getCalypsoCard(),
-                context.getKeypleCalypsoSamReader(),
-                event,
-                contract,
-                calypsoCardCDMX.getBalance(),
-                provider
+                context.getKeypleCardReader().getCalypsoCard()
         );
 
-        return TransactionResult.<TransactionDataEvent>builder()
+        String mac = KeypleUtil.computeTransactionSignature(
+                context.getKeypleCalypsoSamReader(),
+                event,
+                calypsoCardCDMX,
+                calypsoCardCDMX.getBalance()
+        );
+
+        return TransactionResult
+                .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .data(transactionDataEvent)
-                .message(String.format("Final card balance for '%s': %s", calypsoCardCDMX.getSerial(), calypsoCardCDMX.getBalance() + amount))
-                .build();
+                .data(TransactionDataEvent
+                        .builder()
+                        .mac(mac)
+                        .debitLog(logs.getDebitLog())
+                        .loadLog(logs.getLoadLog())
+                        .event(event)
+                        .contract(contract)
+                        .profile(calypsoCardCDMX.getEnvironment().getProfile().getValue())
+                        .transactionAmount(event.getAmount())
+                        .balanceBeforeTransaction(calypsoCardCDMX.getBalance())
+                        .locationCode(event.getLocationId())
+                        .build()
+                ).build();
     }
+
 }

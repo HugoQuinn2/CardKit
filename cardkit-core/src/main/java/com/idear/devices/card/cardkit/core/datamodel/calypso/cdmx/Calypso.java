@@ -1,4 +1,4 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx;
 
 public class Calypso {
     public static final byte ENVIRONMENT_FILE = (byte) 0x07;

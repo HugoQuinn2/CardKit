@@ -1,11 +1,11 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.*;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Country;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.NetworkCode;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Profile;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Version;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Country;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.NetworkCode;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Profile;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Version;
 import com.idear.devices.card.cardkit.core.datamodel.date.LongDate;
 import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
 import com.idear.devices.card.cardkit.core.io.card.file.File;

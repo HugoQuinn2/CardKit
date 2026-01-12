@@ -1,7 +1,7 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.CalypsoProduct;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.CalypsoProduct;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.*;
 import com.idear.devices.card.cardkit.core.io.card.Card;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

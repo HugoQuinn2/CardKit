@@ -1,14 +1,13 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
-import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Logs;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
-import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
+import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
@@ -19,10 +18,7 @@ import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.keypop.calypso.card.WriteAccessLevel;
-import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
-import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.SvAction;
 import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
@@ -74,11 +70,9 @@ public class DebitCard
                 contract.getProvider().decode(Provider.RFU).getValue() != provider)
             throw new CardException("inconsistent provider, monomodal contract, provider most be equal");
 
-        KeypleUtil.performDebit(
-                context.getCardTransactionManager(),
-                amount,
-                ChannelControl.KEEP_OPEN
-        );
+        context.getCardTransactionManager()
+                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                .processCommands(ChannelControl.KEEP_OPEN);
 
         Event event = Event.builEvent(
                 transactionType,
@@ -91,23 +85,46 @@ public class DebitCard
                 amount
         );
 
-        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+        context.getCardTransactionManager()
+                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+                .prepareSvDebit(
+                        amount,
+                        CompactDate.now().toBytes(),
+                        CompactTime.now().toBytes()
+                ).prepareAppendRecord(
+                        event.getFileId(),
+                        event.unparse()
+                ).prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
+
+        Logs logs = KeypleUtil.readCardLogs(
                 context.getCardTransactionManager(),
-                calypsoCardCDMX,
-                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCardReader().getCalypsoCard()
+        );
+
+        String mac = KeypleUtil.computeTransactionSignature(
                 context.getKeypleCalypsoSamReader(),
                 event,
-                contract,
-                calypsoCardCDMX.getBalance(),
-                provider,
-                ChannelControl.KEEP_OPEN
+                calypsoCardCDMX,
+                calypsoCardCDMX.getBalance()
         );
 
         return TransactionResult
                 .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .data(transactionDataEvent)
-                .build();
+                .data(TransactionDataEvent
+                        .builder()
+                        .mac(mac)
+                        .debitLog(logs.getDebitLog())
+                        .loadLog(logs.getLoadLog())
+                        .event(event)
+                        .contract(contract)
+                        .profile(calypsoCardCDMX.getEnvironment().getProfile().getValue())
+                        .transactionAmount(event.getAmount())
+                        .balanceBeforeTransaction(calypsoCardCDMX.getBalance())
+                        .locationCode(event.getLocationId())
+                        .build()
+                ).build();
     }
 
     /**

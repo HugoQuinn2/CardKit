@@ -1,6 +1,6 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.ByteBuilder;
 

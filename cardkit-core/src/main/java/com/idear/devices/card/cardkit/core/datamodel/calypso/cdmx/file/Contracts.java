@@ -1,6 +1,6 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso.file;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.ContractStatus;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.ContractStatus;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 
 import java.util.*;

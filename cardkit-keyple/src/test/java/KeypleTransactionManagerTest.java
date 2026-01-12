@@ -1,8 +1,8 @@
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.DebitLog;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.DebitLog;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.CardKitException;
@@ -41,7 +41,7 @@ public class KeypleTransactionManagerTest {
     @Test
     public void simpleReadCardData() throws Exception {
         System.out.println(ktm.getSamReader().getSamReader().isContactless());
-        ktm.readCardData().print();
+//        ktm.readCardData().print();
     }
 
     @Test
@@ -49,7 +49,7 @@ public class KeypleTransactionManagerTest {
         LocationCode locationCode = new LocationCode(0xAAAAAA);
         Provider provider = Provider.CABLEBUS;
         TransactionType transactionType = TransactionType.GENERAL_DEBIT;
-        int amount = 10_00;
+        int amount = 100_00;
 
         // Executor used to persist or process transaction results asynchronously
         ExecutorService executorTransactionResult = Executors.newSingleThreadExecutor();
@@ -59,10 +59,8 @@ public class KeypleTransactionManagerTest {
                 return;
 
             try {
-                ktm.openSession(WriteAccessLevel.DEBIT);
-
                 // Read all card data and validate the operation result
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.LOAD)
                         .throwException() // throw the exception transaction result and abort all process
                         .getData();
 
@@ -120,7 +118,7 @@ public class KeypleTransactionManagerTest {
 
             try {
                 // Read all card data and validate the operation result
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT)
                         .throwException()
                         .getData();
 
@@ -280,7 +278,7 @@ public class KeypleTransactionManagerTest {
 
         while (true) {
             kcr.waitForCardPresent(0);
-            CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().getData();
+            CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT).getData();
             ktm.reloadCard(
                     calypsoCardCDMX,
                     locationCode.getValue(),
@@ -308,7 +306,7 @@ public class KeypleTransactionManagerTest {
         while (true) {
             kcr.waitForCardPresent(0);
             try {
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT)
                         .throwException()
                         .getData();
 
@@ -345,7 +343,7 @@ public class KeypleTransactionManagerTest {
         while (true) {
             kcr.waitForCardPresent(0);
             try {
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().throwException().getData();
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT).throwException().getData();
                 ktm.invalidateCard(
                         calypsoCardCDMX,
                         TransactionType.BLACKLISTED_CARD.getValue(),
@@ -369,7 +367,7 @@ public class KeypleTransactionManagerTest {
         while (true) {
             kcr.waitForCardPresent(0);
             try {
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData().throwException().getData();
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT).throwException().getData();
                 ktm.rehabilitateCard(calypsoCardCDMX).throwException();
                 System.out.println("Rehabilitate success!!");
             } catch (CardKitException cardKitException) {
@@ -399,7 +397,7 @@ public class KeypleTransactionManagerTest {
             try {
 
                 // Read all card data and validate the operation result
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData()
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT)
                         .throwException() // throw the exception transaction result and abort all process
                         .getData();
 

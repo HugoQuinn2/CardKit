@@ -1,7 +1,7 @@
 package com.idear.devices.card.cardkit.keyple;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransactionManager;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
@@ -18,7 +18,6 @@ import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionM
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -86,8 +85,8 @@ public class KeypleTransactionManager extends AbstractTransactionManager
         return execute(new CloseSession());
     }
 
-    public TransactionResult<CalypsoCardCDMX> readCardData() {
-        return execute(new ReadAllCard());
+    public TransactionResult<CalypsoCardCDMX> readCardData(WriteAccessLevel writeAccessLevel) {
+        return execute(new ReadAllCard(writeAccessLevel));
     }
 
     public TransactionResult<TransactionDataEvent> debitCard(

@@ -1,11 +1,10 @@
 package com.idear.devices.card.cardkit.keyple;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.DebitLog;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.LoadLog;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Profile;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.DebitLog;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.LoadLog;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
 import com.idear.devices.card.cardkit.core.io.Item;
 import lombok.Builder;
@@ -25,8 +24,8 @@ public class TransactionDataEvent extends Item {
     private final int balanceBeforeTransaction;
     private final int transactionAmount;
     private final String samSerial;
-    private final DebitLog debitLog;
-    private final LoadLog loadLog;
+    private DebitLog debitLog;
+    private LoadLog loadLog;
     private final Contract contract;
     private final String mac;
 

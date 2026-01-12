@@ -2,9 +2,8 @@ package com.idear.devices.card.cardkit.core.datamodel.location;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.Equipment;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Equipment;
 import com.idear.devices.card.cardkit.core.io.Item;
-import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

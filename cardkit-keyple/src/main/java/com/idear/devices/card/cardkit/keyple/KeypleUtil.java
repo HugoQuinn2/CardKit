@@ -1,19 +1,19 @@
 package com.idear.devices.card.cardkit.keyple;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.*;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.*;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.datamodel.date.DateTimeReal;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.SamException;
-import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.io.reader.GenericApduResponse;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
+import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamExtensionService;
@@ -32,9 +32,7 @@ import org.eclipse.keyple.plugin.pcsc.PcscSupportedContactlessProtocol;
 import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.PutDataTag;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
-import org.eclipse.keypop.calypso.card.card.CalypsoCard;
-import org.eclipse.keypop.calypso.card.card.CalypsoCardSelectionExtension;
-import org.eclipse.keypop.calypso.card.card.ElementaryFile;
+import org.eclipse.keypop.calypso.card.card.*;
 import org.eclipse.keypop.calypso.card.transaction.*;
 import org.eclipse.keypop.calypso.card.transaction.FreeTransactionManager;
 import org.eclipse.keypop.calypso.card.transaction.spi.SymmetricCryptoCardTransactionManagerFactory;
@@ -428,14 +426,19 @@ public abstract class KeypleUtil {
             ChannelControl channelControl) {
         String mac = "";
         TransactionType transactionType = event.getTransactionType().decode(TransactionType.RFU);
-        if (transactionType.isSigned())
-            mac = computeTransactionSignature(keypleCalypsoSamReader, event, calypsoCardCDMX, initBalance, provider);
 
         Logs logs = readCardLogs(ctm, calypsoCard);
 
+        if (transactionType.isSigned())
+//            mac = computeTransactionSignature(keypleCalypsoSamReader, event, calypsoCardCDMX, initBalance, provider);
+
         if (transactionType.isWritten())
             try {
-                appendEditCardFile(ctm, Calypso.EVENT_FILE, event.unparse(), channelControl, true);
+                ctm.prepareAppendRecord(
+                        event.getFileId(),
+                        event.unparse()
+                );
+//                appendEditCardFile(ctm, Calypso.EVENT_FILE, event.unparse(), channelControl, false);
             } catch (Exception ignored) {
                 System.out.println(ignored);
             }
@@ -490,7 +493,6 @@ public abstract class KeypleUtil {
      * @param cardType the card product type
      * @param cardSerialHex the card serial number (hexadecimal)
      * @param prevSvBalance the previous stored value balance
-     * @param svProvider the stored value provider
      * @return the computed MAC as a hexadecimal string
      */
     public static String computeTransactionSignature(
@@ -501,8 +503,7 @@ public abstract class KeypleUtil {
             int terminalLocation,
             int cardType,
             String cardSerialHex,
-            int prevSvBalance,
-            int svProvider) {
+            int prevSvBalance) {
         BitUtil bit = new BitUtil(0x20 * 8);
         bit.setNextInteger(eventType, 8);
         bit.setNextInteger(transactionTimestamp, 32);
@@ -511,7 +512,7 @@ public abstract class KeypleUtil {
         bit.setNextInteger(cardType, 8);
         bit.setNextHexaString(cardSerialHex, 64);
         bit.setNextInteger(prevSvBalance, 32);
-        bit.setNextInteger(svProvider, 8);
+        bit.setNextInteger(getSvProvider(eventType), 8);
         bit.setNextInteger(0, 16);
         bit.setNextInteger(0, 24);
 
@@ -521,7 +522,17 @@ public abstract class KeypleUtil {
                 (byte) 0xC0,
                 bit.getData());
 
+        log.debug("Digest MAC compute: {}h", response.getSw());
         return HexUtil.toHex(response.getDataOut());
+    }
+
+    private static int getSvProvider(int et) {
+        if (et == 0 || et == 2 || et == 3 || et == 5 || et == 6 ||
+                et == 0x0B || et == 0x0C || et == 0x12 ||
+                et == 0x14 || et == 0x15)
+            return 0xC0;
+        else
+            return 0x00;
     }
 
     /**
@@ -531,15 +542,16 @@ public abstract class KeypleUtil {
      * @param event the event to use
      * @param calypsoCardCDMX the calypso card data to use
      * @param prevSvBalance the previous stored value balance
-     * @param svProvider the stored value provider
      * @return the computed MAC as a hexadecimal string
      */
     public static String computeTransactionSignature(
             KeypleCalypsoSamReader keypleCalypsoSamReader,
             Event event,
             CalypsoCardCDMX calypsoCardCDMX,
-            int prevSvBalance,
-            int svProvider) {
+            int prevSvBalance) {
+        if (!event.getTransactionType().decode(TransactionType.RFU).isSigned())
+            return "";
+
         return computeTransactionSignature(
                 keypleCalypsoSamReader,
                 event.getTransactionType().getValue(),
@@ -548,9 +560,20 @@ public abstract class KeypleUtil {
                 event.getLocationId().getValue(),
                 calypsoCardCDMX.getCalypsoProduct().getValue(),
                 calypsoCardCDMX.getSerial(),
-                prevSvBalance,
-                svProvider
+                prevSvBalance
         );
+    }
+
+    public static String computeTransactionSignature(
+            SecureRegularModeTransactionManager ctm,
+            KeypleCalypsoSamReader keypleCalypsoSamReader,
+            Event event,
+            CalypsoCardCDMX calypsoCardCDMX,
+            int prevSvBalance) {
+        if (event.getTransactionType().decode(TransactionType.RFU).isWritten())
+            ctm.prepareAppendRecord(event.getFileId(), event.unparse());
+
+        return computeTransactionSignature(keypleCalypsoSamReader, event, calypsoCardCDMX, prevSvBalance);
     }
 
     /**
@@ -589,6 +612,7 @@ public abstract class KeypleUtil {
             sw = org.eclipse.keyple.core.util.HexUtil.toHex(Arrays.copyOfRange(
                     response, response.length-2, response.length));
         } catch (TransactionException e) {
+            log.error("Digest MAC compute error: {}", e.getMessage());
             mac = new byte[0];
         }
         return new GenericApduResponse(mac, sw);
@@ -628,14 +652,12 @@ public abstract class KeypleUtil {
             SecureRegularModeTransactionManager ctm,
             int amount,
             ChannelControl channelControl) {
-        ctm
-//                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
-                .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
+        ctm.prepareSvGet(SvOperation.DEBIT, SvAction.DO)
                 .prepareSvDebit(
                         amount,
                         CompactDate.now().toBytes(),
                         CompactTime.now().toBytes())
-//                .prepareCloseSecureSession()
+                .prepareCloseSecureSession()
                 .processCommands(channelControl);
     }
 

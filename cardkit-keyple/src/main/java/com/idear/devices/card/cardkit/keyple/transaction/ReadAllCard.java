@@ -1,17 +1,18 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
 import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.constant.CalypsoProduct;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.Calypso;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.*;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.CalypsoProduct;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.*;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.eclipse.keyple.core.util.HexUtil;
@@ -43,9 +44,10 @@ import java.util.SortedMap;
  * @author Victor Hugo Gaspar Quinn
  */
 @Slf4j
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTransactionContext> {
 
+    private final WriteAccessLevel writeAccessLevel;
     private final CalypsoCardCDMX calypsoCardCDMX = new CalypsoCardCDMX();
 
     @Override
@@ -59,12 +61,11 @@ public class ReadAllCard extends AbstractTransaction<CalypsoCardCDMX, KeypleTran
 
         try {
             context.getCardTransactionManager()
-//                    .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                    .prepareOpenSecureSession(writeAccessLevel)
                     .prepareReadRecord(Calypso.ENVIRONMENT_FILE, 1)
                     .prepareReadRecordsPartially(Calypso.EVENT_FILE, 1, 3, 0, 29)
                     .prepareReadRecordsPartially(Calypso.CONTRACT_FILE, 1, 8, 0, 29)
                     .prepareSvGet(SvOperation.DEBIT, SvAction.DO)
-//                    .prepareCloseSecureSession()
                     .processCommands(ChannelControl.KEEP_OPEN);
 
             calypsoCardCDMX.setBalance(calypsoCard.getSvBalance());

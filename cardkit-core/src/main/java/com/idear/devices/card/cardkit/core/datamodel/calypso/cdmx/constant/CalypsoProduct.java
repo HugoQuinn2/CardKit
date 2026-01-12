@@ -1,9 +1,8 @@
-package com.idear.devices.card.cardkit.core.datamodel.calypso.constant;
+package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant;
 
 import com.idear.devices.card.cardkit.core.datamodel.IDataModel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 
 @RequiredArgsConstructor
 @Getter

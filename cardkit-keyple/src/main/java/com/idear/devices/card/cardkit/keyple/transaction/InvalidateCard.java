@@ -1,9 +1,14 @@
 package com.idear.devices.card.cardkit.keyple.transaction;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.CalypsoCardCDMX;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.TransactionType;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Event;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Logs;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactTime;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionStatus;
-import com.idear.devices.card.cardkit.core.datamodel.calypso.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
+import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.exception.CardException;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
@@ -11,7 +16,10 @@ import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
 import com.idear.devices.card.cardkit.keyple.KeypleUtil;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
+import org.eclipse.keypop.calypso.card.transaction.SvAction;
+import org.eclipse.keypop.calypso.card.transaction.SvOperation;
 
 @RequiredArgsConstructor
 public class InvalidateCard extends AbstractTransaction<TransactionDataEvent, KeypleTransactionContext> {
@@ -28,11 +36,6 @@ public class InvalidateCard extends AbstractTransaction<TransactionDataEvent, Ke
         if (!calypsoCardCDMX.isEnabled())
             throw new CardException("card already invalidated");
 
-        KeypleUtil.invalidateCard(
-                context.getCardTransactionManager(),
-                ChannelControl.KEEP_OPEN
-        );
-
         Event event = Event.builEvent(
                 transactionType,
                 calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
@@ -44,24 +47,43 @@ public class InvalidateCard extends AbstractTransaction<TransactionDataEvent, Ke
                 0
         );
 
-        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+        context.getCardTransactionManager()
+                .prepareOpenSecureSession(WriteAccessLevel.DEBIT)
+                .prepareInvalidate()
+                .prepareAppendRecord(
+                        event.getFileId(),
+                        event.unparse()
+                ).prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
+
+        Logs logs = KeypleUtil.readCardLogs(
                 context.getCardTransactionManager(),
-                calypsoCardCDMX,
-                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCardReader().getCalypsoCard()
+        );
+
+        String mac = KeypleUtil.computeTransactionSignature(
                 context.getKeypleCalypsoSamReader(),
                 event,
-                contract,
-                calypsoCardCDMX.getBalance(),
-                provider,
-                ChannelControl.KEEP_OPEN
+                calypsoCardCDMX,
+                calypsoCardCDMX.getBalance()
         );
 
         return TransactionResult
                 .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message("card " + calypsoCardCDMX.getSerial() + " invalidated")
-                .data(transactionDataEvent)
-                .build();
+                .data(TransactionDataEvent
+                        .builder()
+                        .mac(mac)
+                        .debitLog(logs.getDebitLog())
+                        .loadLog(logs.getLoadLog())
+                        .event(event)
+                        .contract(contract)
+                        .profile(calypsoCardCDMX.getEnvironment().getProfile().getValue())
+                        .transactionAmount(event.getAmount())
+                        .balanceBeforeTransaction(calypsoCardCDMX.getBalance())
+                        .locationCode(event.getLocationId())
+                        .build()
+                ).build();
     }
 
 }
