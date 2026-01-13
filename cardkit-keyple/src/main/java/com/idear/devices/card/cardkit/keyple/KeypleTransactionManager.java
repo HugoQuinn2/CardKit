@@ -5,9 +5,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransactionManager;
 import com.idear.devices.card.cardkit.core.io.transaction.TransactionResult;
-import com.idear.devices.card.cardkit.core.io.transaction.ICardEvent;
 import com.idear.devices.card.cardkit.keyple.transaction.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
@@ -15,10 +13,7 @@ import org.eclipse.keypop.calypso.card.transaction.ChannelControl;
 import org.eclipse.keypop.calypso.card.transaction.SecureRegularModeTransactionManager;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 /**
  * Transaction manager implementation based on Keyple for Calypso cards.
  * <p>
@@ -81,6 +76,17 @@ public class KeypleTransactionManager extends AbstractTransactionManager
     protected void onCardAbsent() {
         ctm.processCommands(ChannelControl.CLOSE_AFTER);
         ctm = null;
+    }
+
+    @Override
+    protected void onSamPresent() {
+
+    }
+
+    @Override
+    protected void onSamAbsent() {
+        samReader.getGenericSamTransactionManager()
+                .processApdusToByteArrays(org.eclipse.keyple.card.generic.ChannelControl.CLOSE_AFTER);
     }
 
     /**
