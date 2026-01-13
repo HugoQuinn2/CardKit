@@ -11,7 +11,7 @@ import com.idear.devices.card.cardkit.keyple.KeypleCalypsoSamReader;
 import com.idear.devices.card.cardkit.keyple.KeypleCardReader;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionManager;
 import com.idear.devices.card.cardkit.keyple.TransactionDataEvent;
-import com.idear.devices.card.cardkit.keyple.event.CardStatus;
+import com.idear.devices.card.cardkit.core.io.transaction.CardStatus;
 import org.eclipse.keypop.calypso.card.WriteAccessLevel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,11 +51,8 @@ public class KeypleTransactionManagerTest {
         TransactionType transactionType = TransactionType.GENERAL_DEBIT;
         int amount = 100_00;
 
-        // Executor used to persist or process transaction results asynchronously
-        ExecutorService executorTransactionResult = Executors.newSingleThreadExecutor();
-
         ktm.getCardEventList().add(e -> {
-            if (!e.getCardStatus().equals(CardStatus.CARD_PRESENT))
+            if (!e.equals(CardStatus.CARD_PRESENT))
                 return;
 
             try {
@@ -73,10 +70,6 @@ public class KeypleTransactionManagerTest {
                         amount
                 ).throwException();
 
-                // Persist or publish the transaction result asynchronously
-//                executorTransactionResult.submit(() -> System.out.println(transactionResult));
-
-//                ktm.closeSession();
                 System.out.println("Debit success!!");
             } catch (CardKitException cardKitException) {
                 System.out.println("Debit aborted: " + cardKitException.getMessage());
@@ -84,15 +77,8 @@ public class KeypleTransactionManagerTest {
                 System.out.println("Fatal error: " + throwable.getMessage());
             }
         });
-        ktm.startCardMonitor();
 
-        while (true) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        ktm.startCardMonitor();
     }
 
     @Test
@@ -302,11 +288,12 @@ public class KeypleTransactionManagerTest {
         RestrictTime restrictTime = RestrictTime.WITHOUT_RESTRICTION;
         int duration = PeriodType.encode(PeriodType.MONTH, 60);
 
-        // Continuous loop simulating a real reader environment
-        while (true) {
-            kcr.waitForCardPresent(0);
+        ktm.getCardEventList().add(e -> {
+            if (!e.equals(CardStatus.CARD_PRESENT))
+                return;
+
             try {
-                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.DEBIT)
+                CalypsoCardCDMX calypsoCardCDMX = ktm.readCardData(WriteAccessLevel.LOAD)
                         .throwException()
                         .getData();
 
@@ -326,11 +313,18 @@ public class KeypleTransactionManagerTest {
                 System.out.println("Purchase success!!");
             } catch (CardKitException cardKitException) {
                 System.out.println("Purchase aborted: " + cardKitException.getMessage());
-            } catch (Throwable e) {
-                System.out.println("Fatal error: " + e.getMessage());
+            } catch (Throwable ex) {
+                System.out.println("Fatal error: " + ex.getMessage());
             }
+        });
 
-            kcr.waitForCarAbsent(0);
+        ktm.startCardMonitor();
+
+        while (true) {
+            try {
+                Thread.sleep(200);
+            } catch (Exception ignored) {
+            }
         }
     }
 

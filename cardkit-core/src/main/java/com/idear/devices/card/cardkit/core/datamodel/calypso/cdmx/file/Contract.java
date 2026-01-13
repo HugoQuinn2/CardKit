@@ -1,7 +1,7 @@
 package com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
+import com.idear.devices.card.cardkit.core.datamodel.decoder.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
 import com.idear.devices.card.cardkit.core.io.card.file.File;

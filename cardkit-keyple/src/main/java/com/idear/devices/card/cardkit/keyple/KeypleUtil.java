@@ -94,7 +94,7 @@ public abstract class KeypleUtil {
                 .orElse(null);
 
         if (reader == null)
-            throw new IllegalStateException("Card reader is null");
+            throw new IllegalStateException("card reader not founded with name " + matchName);
 
         PcscReader pcscReader = PLUGIN
                 .getReaderExtension(PcscReader.class, reader.getName())
@@ -797,7 +797,7 @@ public abstract class KeypleUtil {
 //        wEfContract.getNetwork().setValue(NetworkCode.CDMX);
         wEfContract.getProvider().setValue(provider);
 //        wEfContract.getModality().setValue(Modality.MONOMODAL);
-        wEfContract.getTariff().setValue(Tariff.STORED_VALUE);
+//        wEfContract.getTariff().setValue(Tariff.STORED_VALUE);
         wEfContract.setJourneyInterChanges(1);
 //        wEfContract.setSaleDate(CompactDate.now());
         wEfContract.setAuthKvc((byte) 0xC4 & 0xff);
@@ -935,7 +935,7 @@ public abstract class KeypleUtil {
             CalypsoCard calypsoCard,
             LocalDate startDate,
             LocalDate endDate) {
-        KeyPairContainer keyPairContainer = KeypleCalypsoSamReader.legacySamExtensionService.getLegacySamApiFactory().createKeyPairContainer();
+        KeyPairContainer keyPairContainer = LEGACY_SAM_API_FACTORY.createKeyPairContainer();
         LegacyCardCertificateComputationData cardCertificateComputationData =
                 LEGACY_SAM_API_FACTORY
                         .createLegacyCardCertificateComputationData()

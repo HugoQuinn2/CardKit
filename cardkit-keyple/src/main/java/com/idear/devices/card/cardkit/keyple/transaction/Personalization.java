@@ -22,14 +22,10 @@ public class Personalization extends AbstractTransaction<Boolean, KeypleTransact
     @Override
     public TransactionResult<Boolean> execute(KeypleTransactionContext context) {
 
-        KeypleUtil.editCardFile(
-                context.getCardTransactionManager(),
-                fileId,
-                recordNumber,
-                data,
-                ChannelControl.KEEP_OPEN,
-                true
-        );
+        context.getCardTransactionManager()
+                .prepareUpdateRecord(fileId, recordNumber, data)
+                .prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
 
         return TransactionResult
                 .<Boolean>builder()

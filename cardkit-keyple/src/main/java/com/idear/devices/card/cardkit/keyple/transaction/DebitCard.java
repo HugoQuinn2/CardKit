@@ -56,8 +56,6 @@ public class DebitCard
     private final int passenger;
     private final int amount;
 
-    private Tariff tariff;
-
     @Override
     public TransactionResult<TransactionDataEvent> execute(KeypleTransactionContext context) {
         log.info("Debiting card {}, amount: {}, type: {}, provider: {}",
@@ -122,6 +120,7 @@ public class DebitCard
                         .profile(calypsoCardCDMX.getEnvironment().getProfile().getValue())
                         .transactionAmount(event.getAmount())
                         .balanceBeforeTransaction(calypsoCardCDMX.getBalance())
+                        .samSerial(context.getKeypleCalypsoSamReader().getSerial())
                         .locationCode(event.getLocationId())
                         .build()
                 ).build();

@@ -7,7 +7,7 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Trans
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Version;
 import com.idear.devices.card.cardkit.core.datamodel.date.DateTimeReal;
 import com.idear.devices.card.cardkit.core.datamodel.location.LocationCode;
-import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
+import com.idear.devices.card.cardkit.core.datamodel.decoder.ValueDecoder;
 import com.idear.devices.card.cardkit.core.io.card.file.File;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;

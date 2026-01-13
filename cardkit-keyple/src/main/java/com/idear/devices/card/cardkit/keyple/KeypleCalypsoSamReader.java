@@ -1,6 +1,7 @@
 package com.idear.devices.card.cardkit.keyple;
 
-import com.idear.devices.card.cardkit.core.datamodel.ValueDecoder;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
+import com.idear.devices.card.cardkit.core.datamodel.decoder.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.SamType;
 import com.idear.devices.card.cardkit.core.exception.SamException;
@@ -44,9 +45,6 @@ public class KeypleCalypsoSamReader extends AbstractReader implements IBasicRead
     private boolean waitingForCardPresent;
     private boolean waitingForCardAbsent;
 
-    // Sam data params
-    public static final int RECORD_SIZE = 29;
-
     private int samEnableBits;
     private final ValueDecoder<SamType> samType = ValueDecoder.emptyDecoder(SamType.class);
     private int samNetworkReference;
@@ -61,11 +59,11 @@ public class KeypleCalypsoSamReader extends AbstractReader implements IBasicRead
         if (data == null)
             throw new IllegalArgumentException("Null data.");
 
-        if (data.length > RECORD_SIZE)
+        if (data.length > Calypso.RECORD_SIZE)
             throw new IllegalArgumentException("Data overflow.");
 
-        byte[] tmp = new byte[RECORD_SIZE];
-        if (data.length < RECORD_SIZE) {
+        byte[] tmp = new byte[Calypso.RECORD_SIZE];
+        if (data.length < Calypso.RECORD_SIZE) {
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }
@@ -86,7 +84,13 @@ public class KeypleCalypsoSamReader extends AbstractReader implements IBasicRead
 
     @Override
     public void disconnect() {
+        if (genericSamTransactionManager == null)
+            return;
 
+        genericSamTransactionManager.processApdusToByteArrays(ChannelControl.CLOSE_AFTER);
+        genericSamTransactionManager = null;
+        symmetricCryptoSettingsRT = null;
+        legacySam = null;
     }
 
     @Override

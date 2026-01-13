@@ -5,6 +5,8 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDM
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Event;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Contract;
+import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.Logs;
+import com.idear.devices.card.cardkit.core.datamodel.date.CompactDate;
 import com.idear.devices.card.cardkit.core.datamodel.date.ReverseDate;
 import com.idear.devices.card.cardkit.keyple.KeypleTransactionContext;
 import com.idear.devices.card.cardkit.core.io.transaction.AbstractTransaction;
@@ -48,6 +50,9 @@ public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, Keyp
                 context.getKeypleCalypsoSamReader().getSerial()
         );
 
+        contract.setSaleDate(CompactDate.now());
+        contract.setSaleSam(context.getKeypleCalypsoSamReader().getSerial());
+
         Contract _contract = KeypleUtil.setupRenewContract(
                 context.getCardTransactionManager(),
                 HexUtil.toByteArray(calypsoCardCDMX.getSerial()),
@@ -57,44 +62,53 @@ public class PurchaseCard extends AbstractTransaction<TransactionDataEvent, Keyp
                 duration
         );
 
-        KeypleUtil.editCardFile(
-                context.getCardTransactionManager(),
-                Calypso.CONTRACT_FILE,
-                _contract.getId(),
-                _contract.unparse(),
-                ChannelControl.KEEP_OPEN,
-                false
-        );
-
         Event event = Event.builEvent(
                 TransactionType.CARD_PURCHASE.getValue(),
                 calypsoCardCDMX.getEnvironment().getNetwork().getValue(),
                 provider,
-                contract.getId(),
+                _contract.getId(),
                 passenger,
                 calypsoCardCDMX.getEvents().getNextTransactionNumber(),
                 locationId,
                 amount
         );
 
-        TransactionDataEvent transactionDataEvent = KeypleUtil.saveEvent(
+        context.getCardTransactionManager()
+                .prepareUpdateRecord(
+                        _contract.getFileId(),
+                        _contract.getId(),
+                        _contract.unparse()
+                ).prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
+
+        Logs logs = KeypleUtil.readCardLogs(
                 context.getCardTransactionManager(),
-                calypsoCardCDMX,
-                context.getKeypleCardReader().getCalypsoCard(),
+                context.getKeypleCardReader().getCalypsoCard()
+        );
+
+        String mac = KeypleUtil.computeTransactionSignature(
                 context.getKeypleCalypsoSamReader(),
                 event,
-                _contract,
-                calypsoCardCDMX.getBalance(),
-                provider,
-                ChannelControl.KEEP_OPEN
+                calypsoCardCDMX,
+                calypsoCardCDMX.getBalance()
         );
 
         return TransactionResult
                 .<TransactionDataEvent>builder()
                 .transactionStatus(TransactionStatus.OK)
-                .message(String.format("card %s purchase, expiration: %s", calypsoCardCDMX.getSerial(), contract.getExpirationDate()))
-                .data(transactionDataEvent)
-                .build();
+                .data(TransactionDataEvent
+                        .builder()
+                        .mac(mac)
+                        .debitLog(logs.getDebitLog())
+                        .loadLog(logs.getLoadLog())
+                        .event(event)
+                        .contract(_contract)
+                        .profile(calypsoCardCDMX.getEnvironment().getProfile().getValue())
+                        .transactionAmount(event.getAmount())
+                        .balanceBeforeTransaction(calypsoCardCDMX.getBalance())
+                        .locationCode(event.getLocationId())
+                        .build()
+                ).build();
     }
 
 }

@@ -19,13 +19,10 @@ public class AppendPersonalization extends AbstractTransaction<Boolean, KeypleTr
     @Override
     public TransactionResult<Boolean> execute(KeypleTransactionContext context) {
 
-        KeypleUtil.appendEditCardFile(
-                context.getCardTransactionManager(),
-                fileId,
-                data,
-                ChannelControl.KEEP_OPEN,
-                true
-        );
+        context.getCardTransactionManager()
+                .prepareAppendRecord(fileId, data)
+                .prepareCloseSecureSession()
+                .processCommands(ChannelControl.KEEP_OPEN);
 
         return TransactionResult
                 .<Boolean>builder()
