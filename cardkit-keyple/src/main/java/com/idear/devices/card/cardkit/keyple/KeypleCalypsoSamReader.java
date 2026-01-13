@@ -6,7 +6,6 @@ import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Provi
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.SamType;
 import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
-import com.idear.devices.card.cardkit.core.io.reader.IBasicReader;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,7 +26,7 @@ import java.util.Arrays;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class KeypleCalypsoSamReader extends AbstractReader implements IBasicReader {
+public class KeypleCalypsoSamReader extends AbstractReader {
 
     private final String samName;
     private final String lockSecret;

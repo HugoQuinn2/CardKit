@@ -2,7 +2,6 @@ package com.idear.devices.card.cardkit.keyple;
 
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
 import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
-import com.idear.devices.card.cardkit.core.io.reader.IBasicReader;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
@@ -10,16 +9,12 @@ import org.eclipse.keyple.card.generic.CardTransactionManager;
 import org.eclipse.keyple.card.generic.ChannelControl;
 import org.eclipse.keyple.card.generic.GenericExtensionService;
 import org.eclipse.keyple.core.service.SmartCardService;
-import org.eclipse.keyple.core.service.SmartCardServiceProvider;
 import org.eclipse.keyple.plugin.pcsc.PcscPluginFactoryBuilder;
-import org.eclipse.keypop.calypso.card.CalypsoCardApiFactory;
 import org.eclipse.keypop.calypso.card.card.CalypsoCard;
 import org.eclipse.keypop.reader.*;
 
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Represents a PC/SC-based Calypso card reader.
@@ -51,7 +46,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-public class KeypleCardReader extends AbstractReader implements IBasicReader {
+public class KeypleCardReader extends AbstractReader {
 
     private final String readerName;
     private final String aid;

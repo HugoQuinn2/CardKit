@@ -1,7 +1,6 @@
 package com.idear.devices.card.cardkit.pcsc;
 
 import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
-import com.idear.devices.card.cardkit.core.io.reader.IBasicReader;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,7 @@ import javax.smartcardio.*;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class PcscAbstractReader extends AbstractReader implements IBasicReader {
+public class PcscAbstractReader extends AbstractReader {
 
     public static final String ACS_CARD_READER = ".*ACS ACR1281 1S Dual Reader PICC.*";
     public static final String ACS_SAM_READER = ".*ACS ACR1281 1S Dual Reader SAM.*";
