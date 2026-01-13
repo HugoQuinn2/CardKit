@@ -159,4 +159,9 @@ public class ReverseDate extends Item implements IDataModel {
             );
         }
     }
+
+    @Override
+    public String toString() {
+        return toJsonValue();
+    }
 }

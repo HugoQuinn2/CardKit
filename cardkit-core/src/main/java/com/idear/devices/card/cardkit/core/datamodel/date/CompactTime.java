@@ -132,4 +132,9 @@ public class CompactTime extends Item implements IDataModel {
     public String toJsonValue() {
         return time.toString();
     }
+
+    @Override
+    public String toString() {
+        return toJsonValue();
+    }
 }

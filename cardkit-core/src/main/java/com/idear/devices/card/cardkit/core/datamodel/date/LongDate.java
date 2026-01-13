@@ -132,4 +132,9 @@ public class LongDate extends Item implements IDataModel {
     public static LongDate empty() {
         return new LongDate(0);
     }
+
+    @Override
+    public String toString() {
+        return toJsonValue();
+    }
 }

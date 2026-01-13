@@ -111,4 +111,9 @@ public class DateTimeReal extends Item implements IDataModel {
     public String toJsonValue() {
         return dateTime.toString();
     }
+
+    @Override
+    public String toString() {
+        return toJsonValue();
+    }
 }
