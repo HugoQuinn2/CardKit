@@ -5,6 +5,7 @@ import com.idear.devices.card.cardkit.core.datamodel.decoder.ValueDecoder;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.Provider;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.SamType;
 import com.idear.devices.card.cardkit.core.exception.SamException;
+import com.idear.devices.card.cardkit.core.io.apdu.ResponseApdu;
 import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
 import lombok.Data;
@@ -107,7 +108,9 @@ public class KeypleCalypsoSamReader extends AbstractReader {
                 .createCardTransaction(samReader, legacySam);
 
         serial = HexUtil.toHex(legacySam.getSerialNumber());
-        ResponseAPDU dataout = simpleCommand(new CommandAPDU(0x80, 0xBE, 0x00, 0xA0, 0x30));
+        ResponseApdu dataout = simpleCommand(
+                new CommandAPDU(0x80, 0xBE, 0x00, 0xA0, 0x30)
+        ).throwIsNotSuccess();
 
         byte[] parameters = Arrays.copyOfRange(dataout.getBytes(), 8, 37);
         this.parse(parameters);
@@ -121,17 +124,12 @@ public class KeypleCalypsoSamReader extends AbstractReader {
     }
 
     @Override
-    public ResponseAPDU simpleCommand(CommandAPDU command) {
+    public ResponseApdu simpleCommand(CommandAPDU command) {
         if (genericSamTransactionManager == null)
             throw new SamException("connection to sam not started");
 
-        ResponseAPDU responseAPDU = new ResponseAPDU(genericSamTransactionManager
+        return new ResponseApdu(genericSamTransactionManager
                 .prepareApdu(command.getBytes())
                 .processApdusToByteArrays(ChannelControl.KEEP_OPEN).get(0));
-
-        if (responseAPDU.getSW() != 0x9000)
-            throw new RuntimeException("status response error " + responseAPDU.getSW());
-
-        return responseAPDU;
     }
 }

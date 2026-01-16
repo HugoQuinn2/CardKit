@@ -1,6 +1,7 @@
 package com.idear.devices.card.cardkit.keyple;
 
 import com.idear.devices.card.cardkit.core.exception.ReaderException;
+import com.idear.devices.card.cardkit.core.io.apdu.ResponseApdu;
 import com.idear.devices.card.cardkit.core.io.reader.AbstractReader;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -107,19 +108,13 @@ public class KeypleCardReader extends AbstractReader {
     }
 
     @Override
-    public ResponseAPDU simpleCommand(CommandAPDU command) {
+    public ResponseApdu simpleCommand(CommandAPDU command) {
         if (genericTransactionManager  == null)
-            return null;
+            throw new RuntimeException("connection to card not started");
 
-        ResponseAPDU responseAPDU = new ResponseAPDU(
+        return new ResponseApdu(
                 genericTransactionManager
                         .prepareApdu(command.getBytes())
-                        .processApdusToByteArrays(ChannelControl.KEEP_OPEN).get(0)
-        );
-
-        if (responseAPDU.getSW() != 9000)
-            throw new RuntimeException("unexpected response APDU SW code: " + responseAPDU.getSW());
-
-        return responseAPDU;
+                        .processApdusToByteArrays(ChannelControl.KEEP_OPEN).get(0));
     }
 }
