@@ -8,7 +8,7 @@
 
     <groupId>com.idear.devices.card.cardkit</groupId>
     <artifactId>cardkit-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <packaging>jar</packaging>
 
     <name>CardKit Core</name>
