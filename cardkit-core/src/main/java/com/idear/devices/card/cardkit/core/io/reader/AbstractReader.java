@@ -1,5 +1,6 @@
 package com.idear.devices.card.cardkit.core.io.reader;
 
+import com.idear.devices.card.cardkit.core.io.apdu.ResponseApdu;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,7 +69,7 @@ public abstract class AbstractReader {
      * @param command to send
      * @return the apdu response
      */
-    abstract public ResponseAPDU simpleCommand(CommandAPDU command);
+    abstract public ResponseApdu simpleCommand(CommandAPDU command);
 
     /**
      * Blocks execution until a card is presented on the reader or the timeout

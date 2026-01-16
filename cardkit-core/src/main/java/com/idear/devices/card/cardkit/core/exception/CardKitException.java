@@ -6,8 +6,8 @@ public class CardKitException extends RuntimeException {
         super(message);
     }
 
-    public CardKitException(String message, Object... o) {
-        super(String.format(message, o));
+    public CardKitException(String message, Throwable cause) {
+        super(message, cause);
     }
 
 }
