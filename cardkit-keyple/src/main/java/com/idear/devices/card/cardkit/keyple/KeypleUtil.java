@@ -1,6 +1,5 @@
 package com.idear.devices.card.cardkit.keyple;
 
-import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.Calypso;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.CalypsoCardCDMX;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.constant.*;
 import com.idear.devices.card.cardkit.core.datamodel.calypso.cdmx.file.*;
@@ -13,7 +12,6 @@ import com.idear.devices.card.cardkit.core.exception.SamException;
 import com.idear.devices.card.cardkit.core.io.reader.GenericApduResponse;
 import com.idear.devices.card.cardkit.core.utils.BitUtil;
 import com.idear.devices.card.cardkit.core.utils.ByteUtils;
-import com.idear.devices.card.cardkit.core.utils.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.keyple.card.calypso.CalypsoExtensionService;
 import org.eclipse.keyple.card.calypso.crypto.legacysam.LegacySamExtensionService;
@@ -79,6 +77,15 @@ public abstract class KeypleUtil {
             PcscPluginFactoryBuilder.builder().setCardMonitoringCycleDuration(5).build());
 
     /**
+     * Returns a list string of pcsc readers connected
+     *
+     * @return Returns a list string of pcsc readers connected
+     */
+    public static Set<String> getReaderNames() {
+        return PLUGIN.getReaderNames();
+    }
+
+    /**
      * Returns the first card reader whose name matches the given regular expression.
      *
      * @param matchName a regular expression used to match the reader name
@@ -134,10 +141,17 @@ public abstract class KeypleUtil {
                 .createCalypsoCardSelectionExtension()
                 .acceptInvalidatedCard();
 
-        cardSelectionManager.prepareSelection(
-                READER_API_FACTORY.createIsoCardSelector()
-                        .filterByDfName(aid),
-                calypsoCardSelection);
+        if (!aid.isEmpty())
+            cardSelectionManager.prepareSelection(
+                    READER_API_FACTORY.createIsoCardSelector()
+                            .filterByDfName(aid),
+                    calypsoCardSelection
+            );
+        else
+            cardSelectionManager.prepareSelection(
+                    READER_API_FACTORY.createIsoCardSelector(),
+                    calypsoCardSelection
+            );
 
         SmartCard smartCard;
 
@@ -149,6 +163,18 @@ public abstract class KeypleUtil {
             throw new IllegalStateException("The selection of the application " + aid + " failed.");
 
         return  (CalypsoCard) smartCard;
+    }
+
+    /**
+     * Selects a Calypso card without application selection
+     *
+     * @param cardReader the reader where the card is inserted
+     * @return the selected {@link CalypsoCard}
+     * @throws IllegalStateException if the application selection fails
+     */
+    public static CalypsoCard selectCard(
+            CardReader cardReader) {
+        return selectCard(cardReader, "");
     }
 
     /**
@@ -429,7 +455,7 @@ public abstract class KeypleUtil {
 
         Logs logs = readCardLogs(ctm, calypsoCard);
 
-        if (transactionType.isSigned())
+//        if (transactionType.isSigned())
 //            mac = computeTransactionSignature(keypleCalypsoSamReader, event, calypsoCardCDMX, initBalance, provider);
 
         if (transactionType.isWritten())

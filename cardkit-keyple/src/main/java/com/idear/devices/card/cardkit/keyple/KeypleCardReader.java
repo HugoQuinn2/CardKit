@@ -50,7 +50,7 @@ import javax.smartcardio.ResponseAPDU;
 public class KeypleCardReader extends AbstractReader {
 
     private final String readerName;
-    private final String aid;
+    private String aid = "";
 
     @ToString.Exclude
     private CardTransactionManager genericTransactionManager;
@@ -72,7 +72,12 @@ public class KeypleCardReader extends AbstractReader {
 
     @Override
     public void disconnect() {
+        if (genericTransactionManager == null)
+            return;
 
+        genericTransactionManager.processApdusToByteArrays(ChannelControl.CLOSE_AFTER);
+        calypsoCard = null;
+        genericTransactionManager = null;
     }
 
     @Override

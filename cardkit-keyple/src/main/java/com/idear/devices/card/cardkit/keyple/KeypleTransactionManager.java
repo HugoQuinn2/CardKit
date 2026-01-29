@@ -32,6 +32,8 @@ import java.time.LocalDate;
 public class KeypleTransactionManager extends AbstractTransactionManager
         <KeypleCardReader, KeypleCalypsoSamReader, KeypleTransactionContext> {
 
+    private final String aid;
+
     /**
      * Active secure transaction manager for the current card session.
      */
@@ -45,8 +47,17 @@ public class KeypleTransactionManager extends AbstractTransactionManager
      */
     public KeypleTransactionManager(
             KeypleCardReader cardReader,
-            KeypleCalypsoSamReader samReader) {
+            KeypleCalypsoSamReader samReader,
+            String aid) {
         super(cardReader, samReader);
+        this.aid = aid;
+        cardReader.setAid(aid);
+    }
+
+    @Override
+    public void startCardMonitor() {
+        cardReader.setAid(aid);
+        super.startCardMonitor();
     }
 
     /**
@@ -96,6 +107,7 @@ public class KeypleTransactionManager extends AbstractTransactionManager
      */
     @Override
     protected KeypleTransactionContext createContext() {
+        cardReader.setAid(aid);
         return KeypleTransactionContext
                 .builder()
                 .cardTransactionManager(ctm)

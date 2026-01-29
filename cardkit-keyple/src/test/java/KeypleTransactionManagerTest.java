@@ -32,10 +32,10 @@ public class KeypleTransactionManagerTest {
     @BeforeAll
     static void initOnce() throws Exception {
         kcsr = new KeypleCalypsoSamReader(ACS_SAM_READER, lockSecret);
-        kcr = new KeypleCardReader(ACS_CARD_READER, Calypso.AID_CDMX);
+        kcr = new KeypleCardReader(ACS_CARD_READER);
         kcr.connect();
         kcsr.connect();
-        ktm = new KeypleTransactionManager(kcr, kcsr);
+        ktm = new KeypleTransactionManager(kcr, kcsr, Calypso.AID_CDMX);
     }
 
     @Test
